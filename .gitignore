@@ -21,3 +21,5 @@ buildNumber.properties
 *.iws
 *.ipr
 out/
+/gulimall-Parent/renren-fast/.gitignore
+/gulimall-Parent/renren-generator/.gitignore
