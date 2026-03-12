@@ -1,3 +1,14 @@
 spring:
   application:
     name: service-order
+  datasource:
+    url: jdbc:mysql://localhost:3306/guli_oms
+    username: root
+    password: 983243
+    driver-class-name: com.mysql.cj.jdbc.Driver
+server:
+  port: 9000
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto

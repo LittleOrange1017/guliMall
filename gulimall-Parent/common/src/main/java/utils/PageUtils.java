@@ -1,5 +1,7 @@
 package utils;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -14,15 +16,25 @@ import java.util.List;
  */
 public class PageUtils implements Serializable {
     private static final long serialVersionUID = 1L;
-    //总记录数
+    /**
+     * 总记录数
+     */
     private int totalCount;
-    //每页记录数
+    /**
+     * 每页记录数
+     */
     private int pageSize;
-    //总页数
+    /**
+     * 总页数
+     */
     private int totalPage;
-    //当前页数
+    /**
+     * 当前页数
+     */
     private int currPage;
-    //列表数据
+    /**
+     * 列表数据
+     */
     private List<?> list;
 
     /**
@@ -38,6 +50,17 @@ public class PageUtils implements Serializable {
         this.pageSize = pageSize;
         this.currPage = currPage;
         this.totalPage = (int)Math.ceil((double)totalCount/pageSize);
+    }
+
+    /**
+     * 分页
+     */
+    public PageUtils(IPage<?> page) {
+        this.list = page.getRecords();
+        this.totalCount = (int)page.getTotal();
+        this.pageSize = (int)page.getSize();
+        this.currPage = (int)page.getCurrent();
+        this.totalPage = (int)page.getPages();
     }
 
     public int getTotalCount() {

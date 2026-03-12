@@ -1,5 +1,9 @@
 package com.xjz.gulimall.coupon;
 
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 /**
  * ClassName: GulimallCouponApplication
  * Package:com.xjz.gulimall.coupon
@@ -9,5 +13,9 @@ package com.xjz.gulimall.coupon;
  * @Create 2026/3/11 13:37
  * @Version 1.0
  */
+@SpringBootApplication
 public class GulimallCouponApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(GulimallCouponApplication.class,args);
+    }
 }
