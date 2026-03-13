@@ -1,13 +1,11 @@
 package com.xjz.gulimall.coupon.controller;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.xjz.gulimall.coupon.entity.CouponEntity;
 import com.xjz.gulimall.coupon.service.CouponService;
@@ -30,6 +28,9 @@ public class CouponController {
     @Autowired
     private CouponService couponService;
 
+    private String age;
+    private String name;
+
     /**
      * 列表
      */
@@ -40,8 +41,19 @@ public class CouponController {
 
         return R.ok().put("page", page);
     }
-
-
+    /**
+     * 查看会员优惠券
+     */
+    @GetMapping("member/list")
+    public R memberCoupons(){
+        CouponEntity coupon=new CouponEntity();
+        coupon.setCouponName("早鸟券");
+        coupon.setAmount(BigDecimal.valueOf(100.0));
+        return R.ok().put("coupon",coupon);
+    }
+    /**
+     * 测试配置中心动态刷新
+     */
     /**
      * 信息
      */

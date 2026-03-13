@@ -2,12 +2,10 @@ package com.xjz.gulimall.member.controller;
 
 import java.util.Arrays;
 import java.util.Map;
+
+import com.xjz.gulimall.member.feign.CouponFeignClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.xjz.gulimall.member.entity.MemberEntity;
 import com.xjz.gulimall.member.service.MemberService;
@@ -28,7 +26,18 @@ import utils.R;
 public class MemberController {
     @Autowired
     private MemberService memberService;
-
+    @Autowired
+    private CouponFeignClient client;
+    /**
+     * 测试---查询会员拥有的优惠券
+     */
+    @GetMapping("member/coupon")
+    public R selectMemberCoupons(){
+        MemberEntity member=new MemberEntity();
+        member.setNickname("小橘子");
+        R r = client.memberCoupons();
+        return R.ok().put("member",member).put("coupons",r.get("coupon"));
+    }
     /**
      * 列表
      */
