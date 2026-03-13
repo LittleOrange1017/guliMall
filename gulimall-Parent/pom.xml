@@ -26,8 +26,8 @@
 
         <!-- 核心版本控制 -->
         <spring-boot.version>2.6.6</spring-boot.version>
-        <spring-cloud.version>2023.0.3</spring-cloud.version>
-        <spring-cloud-alibaba.version>2023.0.3.2</spring-cloud-alibaba.version>
+        <spring-cloud.version>2021.0.1</spring-cloud.version>
+        <spring-cloud-alibaba.version>2021.0.1.0</spring-cloud-alibaba.version>
 
         <!-- 第三方组件版本 (自己管理的) -->
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
