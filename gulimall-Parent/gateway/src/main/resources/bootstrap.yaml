@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: service-gateway
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+        group: COMMON-GROUP
+        file-extension: yaml

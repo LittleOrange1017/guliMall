@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,9 +29,6 @@ public class CouponController {
     @Autowired
     private CouponService couponService;
 
-    private String age;
-    private String name;
-
     /**
      * 列表
      */
@@ -51,9 +49,7 @@ public class CouponController {
         coupon.setAmount(BigDecimal.valueOf(100.0));
         return R.ok().put("coupon",coupon);
     }
-    /**
-     * 测试配置中心动态刷新
-     */
+
     /**
      * 信息
      */
