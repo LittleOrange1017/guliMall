@@ -8,5 +8,22 @@ spring:
       config:
         server-addr: 127.0.0.1:8848
         namespace: dev-namespace-uuid
-        group: COMMON-GROUP
+        group: COMMON_GROUP
         file-extension: yaml
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+    gateway:
+      routes:
+        - id: product_route
+          uri: lb://service-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - RewritePath=/api/product/(?<segment>.*), /product/$\{segment}
+        - id: admin_route
+          uri: lb://service-renrenfast
+          predicates:
+            - Path=/api/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /renren-fast/$\{segment}

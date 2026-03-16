@@ -23,10 +23,6 @@
             <version>1.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-web</artifactId>
-                </exclusion>
-                <exclusion>
                     <artifactId>mybatis-plus-boot-starter</artifactId>
                     <groupId>com.baomidou</groupId>
                 </exclusion>

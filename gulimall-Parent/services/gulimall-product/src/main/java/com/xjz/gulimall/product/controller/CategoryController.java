@@ -8,6 +8,7 @@ import utils.PageUtils;
 import utils.R;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -19,20 +20,19 @@ import java.util.Map;
  * @date 2026-03-11 14:45:25
  */
 @RestController
-@RequestMapping("coupon/category")
+@RequestMapping("product/category")
 public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
     /**
-     * 列表
+     * 查询出所有的分类以及子分类，以树形结构组装起来
      */
-    @RequestMapping("/list")
+    @RequestMapping("/list/tree")
     //@RequiresPermissions("coupon:category:list")
-    public R list(@RequestParam Map<String, Object> params){
-        PageUtils page = categoryService.queryPage(params);
-
-        return R.ok().put("page", page);
+    public R list(){
+       List<CategoryEntity> entities=categoryService.listWithTree();
+       return R.ok().put("data",entities);
     }
 
 

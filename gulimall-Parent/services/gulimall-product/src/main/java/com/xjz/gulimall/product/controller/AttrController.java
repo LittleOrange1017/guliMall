@@ -19,7 +19,7 @@ import java.util.Map;
  * @date 2026-03-11 14:45:25
  */
 @RestController
-@RequestMapping("coupon/attr")
+@RequestMapping("product/attr")
 public class AttrController {
     @Autowired
     private AttrService attrService;

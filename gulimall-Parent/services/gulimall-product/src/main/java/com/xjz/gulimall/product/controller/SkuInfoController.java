@@ -19,7 +19,7 @@ import java.util.Map;
  * @date 2026-03-11 14:45:24
  */
 @RestController
-@RequestMapping("coupon/skuinfo")
+@RequestMapping("product/skuinfo")
 public class SkuInfoController {
     @Autowired
     private SkuInfoService skuInfoService;
