@@ -35,7 +35,6 @@ public class CategoryController {
        return R.ok().put("data",entities);
     }
 
-
     /**
      * 信息
      */
@@ -70,14 +69,18 @@ public class CategoryController {
     }
 
     /**
-     * 删除
+     * 删除当前子节点
      */
     @RequestMapping("/delete")
     //@RequiresPermissions("coupon:category:delete")
     public R delete(@RequestBody Long[] catIds){
-		categoryService.removeByIds(Arrays.asList(catIds));
+        int result = categoryService.removeCategoryByIds(Arrays.asList(catIds));
+        if(result<1)
+        {
+            return R.error("删除失败");
+        }
 
-        return R.ok();
+        return R.ok().put("code",200);
     }
 
 }
