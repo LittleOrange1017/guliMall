@@ -40,7 +40,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         // 1.查出所有分类
         List<CategoryEntity> entities = categoryDao.selectList(null);
         // 2.组装成父子的树形结构
-        List<CategoryEntity> levelsOne = entities.stream().filter(categoryEntity -> categoryEntity.getParentCid()==0).
+        List<CategoryEntity> levelsOne = entities.stream().filter(categoryEntity -> categoryEntity.getParentCid().equals(0L)).
                 map(new Function<CategoryEntity, CategoryEntity>() {
                     @Override
                     public CategoryEntity apply(CategoryEntity item) {
@@ -61,7 +61,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
                 .filter(new Predicate<CategoryEntity>() {
                     @Override
                     public boolean test(CategoryEntity categoryEntity) {
-                        return categoryEntity.getParentCid()==root.getCatId();
+                        return categoryEntity.getParentCid().equals(root.getCatId());
                     }
                 })
                 .map(new Function<CategoryEntity, CategoryEntity>() {
@@ -84,5 +84,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     public int removeCategoryByIds(List<Long> asList) {
         //Todo 删除之前需要判断当前删除的菜单，是否被其他地方引用
         return baseMapper.deleteBatchIds(asList);
+    }
+
+    @Override
+    public int saveCategory(CategoryEntity category) {
+        return categoryDao.insert(category);
     }
 }

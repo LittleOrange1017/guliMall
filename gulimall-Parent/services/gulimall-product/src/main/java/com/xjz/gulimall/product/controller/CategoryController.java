@@ -52,9 +52,12 @@ public class CategoryController {
     @RequestMapping("/save")
     //@RequiresPermissions("coupon:category:save")
     public R save(@RequestBody CategoryEntity category){
-		categoryService.save(category);
-
-        return R.ok();
+        int res = categoryService.saveCategory(category);
+        if(res<1)
+        {
+            return R.error();
+        }
+        return R.ok().put("code",200);
     }
 
     /**
