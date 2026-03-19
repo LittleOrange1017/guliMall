@@ -66,9 +66,12 @@ public class CategoryController {
     @RequestMapping("/update")
     //@RequiresPermissions("coupon:category:update")
     public R update(@RequestBody CategoryEntity category){
-		categoryService.updateById(category);
-
-        return R.ok();
+        int i = categoryService.updateCategoryById(category);
+        if(i<1)
+        {
+            return R.error("修改失败");
+        }
+        return R.ok().put("code",200);
     }
 
     /**

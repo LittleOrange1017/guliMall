@@ -23,5 +23,7 @@ public interface CategoryService extends IService<CategoryEntity> {
     int removeCategoryByIds(List<Long> asList);
 
     int saveCategory(CategoryEntity category);
+
+    int updateCategoryById(CategoryEntity category);
 }
 

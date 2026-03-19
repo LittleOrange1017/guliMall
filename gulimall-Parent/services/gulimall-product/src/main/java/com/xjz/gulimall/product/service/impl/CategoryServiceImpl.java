@@ -3,6 +3,7 @@ package com.xjz.gulimall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,5 +90,12 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     @Override
     public int saveCategory(CategoryEntity category) {
         return categoryDao.insert(category);
+    }
+
+    @Override
+    public int updateCategoryById(CategoryEntity category) {
+        UpdateWrapper<CategoryEntity> updateWrapper = new UpdateWrapper<CategoryEntity>();
+        updateWrapper.eq("cat_id", category.getCatId());
+        return categoryDao.update(category, updateWrapper);
     }
 }
