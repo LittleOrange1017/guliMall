@@ -73,6 +73,16 @@ public class CategoryController {
         }
         return R.ok().put("code",200);
     }
+    /**
+     * 批量更新被拖拽节点的数据
+     */
+    @RequestMapping("/update/sort")
+    public R updateBatch(@RequestBody CategoryEntity[] categoryEntities)
+    {
+        List<CategoryEntity> categoryEntityList=Arrays.asList(categoryEntities);
+        categoryService.updateBatchById(categoryEntityList);
+        return R.ok().put("code",200);
+    }
 
     /**
      * 删除当前子节点
