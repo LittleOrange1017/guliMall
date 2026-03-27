@@ -55,7 +55,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <!-- 3. MyBatis Plus (架构图中的 MySQL 持久层框架) -->
             <dependency>
                 <groupId>com.baomidou</groupId>
