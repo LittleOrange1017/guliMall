@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: service-thirdparty
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+        extension-configs:
+          - data-id: gulimall-third-party-dev.yaml
+            refresh: true
+            group: DEFAULT_GROUP
+            type: yaml
+server:
+  port: 12000

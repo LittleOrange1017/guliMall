@@ -1,4 +1,4 @@
-package com.xjz.gulimall.product.properties;
+package com.xjz.gulimall.thirdparty.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * ClassName: OssProperties
- * Package:com.xjz.gulimall.product.properties
+ * Package:com.xjz.gulimall.thirdparty.properties
  * Description:
  *
  * @Author 小橘子神灯
@@ -15,10 +15,11 @@ import org.springframework.stereotype.Component;
  */
 @Data
 @Component
-@ConfigurationProperties(prefix = "spring.cloud.alicloud.oss")
+@ConfigurationProperties(prefix = "oss")
 public class OssProperties {
     private String accessKey;
     private String secretKey;
     private String bucket;
     private String endpoint;
+    private String stsRoleArn;
 }

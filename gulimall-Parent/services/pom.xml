@@ -14,6 +14,7 @@
         <module>gulimall-order</module>
         <module>gulimall-product</module>
         <module>gulimall-ware</module>
+        <module>gulimall-thirdParty</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
