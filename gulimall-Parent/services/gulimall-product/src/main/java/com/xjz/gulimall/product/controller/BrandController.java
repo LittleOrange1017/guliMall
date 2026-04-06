@@ -55,7 +55,7 @@ public class BrandController {
     public R save(@RequestBody BrandEntity brand){
 		brandService.save(brand);
 
-        return R.ok();
+        return R.ok().put("code",200);
     }
 
     /**
@@ -86,8 +86,7 @@ public class BrandController {
     //@RequiresPermissions("coupon:brand:delete")
     public R delete(@RequestBody Long[] brandIds){
 		brandService.removeByIds(Arrays.asList(brandIds));
-
-        return R.ok();
+        return R.ok().put("code",200);
     }
 
 }
