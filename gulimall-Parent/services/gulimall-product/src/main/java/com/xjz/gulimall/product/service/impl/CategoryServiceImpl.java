@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.bouncycastle.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import utils.Query;
 import com.xjz.gulimall.product.dao.CategoryDao;
@@ -14,9 +15,7 @@ import com.xjz.gulimall.product.service.CategoryService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -97,5 +96,22 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         UpdateWrapper<CategoryEntity> updateWrapper = new UpdateWrapper<CategoryEntity>();
         updateWrapper.eq("cat_id", category.getCatId());
         return categoryDao.update(category, updateWrapper);
+    }
+
+    @Override
+    public Long[] findCatelogIds(Long catelogId) {
+        CategoryEntity entity = categoryDao.selectById(catelogId);
+        List<Long> catelogIds = new ArrayList<>();
+        findParentPath(catelogId,catelogIds);
+        Collections.reverse(catelogIds);
+        return catelogIds.toArray(new Long[0]);
+    }
+
+    private void findParentPath(Long catelogId, List<Long> catelogIds) {
+        catelogIds.add(catelogId);
+        CategoryEntity entity = categoryDao.selectById(catelogId);
+        if (entity.getParentCid() != 0) {
+            findParentPath(entity.getParentCid(), catelogIds);
+        }
     }
 }

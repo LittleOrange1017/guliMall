@@ -2,6 +2,7 @@ package com.xjz.gulimall.product.controller;
 
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
 import com.xjz.gulimall.product.service.AttrGroupService;
+import com.xjz.gulimall.product.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import utils.PageUtils;
@@ -23,6 +24,8 @@ import java.util.Map;
 public class AttrGroupController {
     @Autowired
     private AttrGroupService attrGroupService;
+    @Autowired
+    private CategoryService categoryService;
 
     /**
      * 列表
@@ -42,7 +45,9 @@ public class AttrGroupController {
     //@RequiresPermissions("coupon:attrgroup:info")
     public R info(@PathVariable("attrGroupId") Long attrGroupId){
 		AttrGroupEntity attrGroup = attrGroupService.getById(attrGroupId);
-
+        Long catelogId = attrGroup.getCatelogId();
+        Long[] catelogIds=categoryService.findCatelogIds(catelogId);
+        attrGroup.setCatelogIds(catelogIds);
         return R.ok().put("attrGroup", attrGroup);
     }
 
@@ -53,7 +58,6 @@ public class AttrGroupController {
     //@RequiresPermissions("coupon:attrgroup:save")
     public R save(@RequestBody AttrGroupEntity attrGroup){
 		attrGroupService.save(attrGroup);
-
         return R.ok();
     }
 
