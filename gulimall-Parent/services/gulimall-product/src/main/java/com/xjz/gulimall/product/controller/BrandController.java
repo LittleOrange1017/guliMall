@@ -1,8 +1,10 @@
 package com.xjz.gulimall.product.controller;
 
 import com.xjz.gulimall.product.entity.BrandEntity;
+import com.xjz.gulimall.product.entity.ValidationGroups;
 import com.xjz.gulimall.product.service.BrandService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import utils.PageUtils;
 import utils.R;
@@ -52,7 +54,7 @@ public class BrandController {
      */
     @RequestMapping("/save")
     //@RequiresPermissions("coupon:brand:save")
-    public R save(@RequestBody BrandEntity brand){
+    public R save(@Validated(value = ValidationGroups.save.class) @RequestBody BrandEntity brand){
 		brandService.save(brand);
 
         return R.ok().put("code",200);
@@ -63,7 +65,7 @@ public class BrandController {
      */
     @RequestMapping("/update")
     //@RequiresPermissions("coupon:brand:update")
-    public R update(@RequestBody BrandEntity brand){
+    public R update(@Validated(value = ValidationGroups.Update.class) @RequestBody BrandEntity brand){
 		brandService.updateById(brand);
 
         return R.ok();

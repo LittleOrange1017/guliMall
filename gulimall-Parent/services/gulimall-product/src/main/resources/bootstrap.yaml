@@ -22,3 +22,6 @@ spring:
         namespace: dev-namespace-uuid
 server:
   port: 10000
+logging:
+  level:
+    com.xjz.gulimall: debug
