@@ -1,6 +1,7 @@
 package com.xjz.gulimall.product.dto;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import lombok.Data;
 
 /**
  * ClassName: AttrDto
@@ -11,6 +12,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
  * @Create 2026/4/14 15:19
  * @Version 1.0
  */
+@Data
 public class AttrDto {
     /**
      * 属性id

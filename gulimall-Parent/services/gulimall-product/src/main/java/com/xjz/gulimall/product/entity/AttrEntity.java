@@ -2,7 +2,9 @@ package com.xjz.gulimall.product.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -14,6 +16,8 @@ import java.io.Serializable;
  * @date 2026-03-11 14:45:25
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @TableName("pms_attr")
 public class AttrEntity implements Serializable {
 	private static final long serialVersionUID = 1L;

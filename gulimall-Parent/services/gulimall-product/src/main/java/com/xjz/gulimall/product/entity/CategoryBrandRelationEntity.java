@@ -9,6 +9,7 @@ import java.util.Date;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 品牌分类关联
@@ -19,6 +20,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @TableName("pms_category_brand_relation")
 public class CategoryBrandRelationEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
