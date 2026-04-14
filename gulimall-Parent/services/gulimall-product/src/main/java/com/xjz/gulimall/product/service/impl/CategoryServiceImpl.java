@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xjz.gulimall.product.service.CategoryBrandRelationService;
+import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import utils.Query;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity> implements CategoryService {
     @Autowired
     private CategoryDao categoryDao;
+    @Autowired
+    private CategoryBrandRelationService categoryBrandRelationService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -95,6 +99,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     public int updateCategoryById(CategoryEntity category) {
         UpdateWrapper<CategoryEntity> updateWrapper = new UpdateWrapper<CategoryEntity>();
         updateWrapper.eq("cat_id", category.getCatId());
+        if(!StringUtils.isEmpty(category.getName()))
+        {
+            categoryBrandRelationService.updateCategoryName(category.getCatId(), category.getName());
+        }
         return categoryDao.update(category, updateWrapper);
     }
 

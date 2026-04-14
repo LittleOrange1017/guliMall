@@ -46,7 +46,7 @@ public class BrandController {
     public R info(@PathVariable("brandId") Long brandId){
 		BrandEntity brand = brandService.getById(brandId);
 
-        return R.ok().put("brand", brand);
+        return R.ok().put("brand", brand).put("code",200);
     }
 
     /**
@@ -66,9 +66,9 @@ public class BrandController {
     @RequestMapping("/update")
     //@RequiresPermissions("coupon:brand:update")
     public R update(@Validated(value = ValidationGroups.Update.class) @RequestBody BrandEntity brand){
-		brandService.updateById(brand);
+		brandService.updateDetail(brand);
 
-        return R.ok();
+        return R.ok().put("code",200);
     }
     @RequestMapping("/update/status")
     public R updateStatus(@RequestBody BrandEntity brand)
