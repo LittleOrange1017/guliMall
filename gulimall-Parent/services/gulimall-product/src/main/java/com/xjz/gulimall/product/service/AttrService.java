@@ -1,6 +1,7 @@
 package com.xjz.gulimall.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xjz.gulimall.product.dto.AttrDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import utils.PageUtils;
 
@@ -16,5 +17,7 @@ import java.util.Map;
 public interface AttrService extends IService<AttrEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    void save(AttrDto attr);
 }
 

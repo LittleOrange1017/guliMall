@@ -1,5 +1,6 @@
 package com.xjz.gulimall.product.controller;
 
+import com.xjz.gulimall.product.dto.AttrDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.service.AttrService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,7 @@ public class AttrController {
     public R info(@PathVariable("attrId") Long attrId){
 		AttrEntity attr = attrService.getById(attrId);
 
-        return R.ok().put("attr", attr);
+        return R.ok().put("attr", attr).put("code",0);
     }
 
     /**
@@ -52,7 +53,7 @@ public class AttrController {
      */
     @RequestMapping("/save")
     //@RequiresPermissions("coupon:attr:save")
-    public R save(@RequestBody AttrEntity attr){
+    public R save(@RequestBody AttrDto attr){
 		attrService.save(attr);
 
         return R.ok();
