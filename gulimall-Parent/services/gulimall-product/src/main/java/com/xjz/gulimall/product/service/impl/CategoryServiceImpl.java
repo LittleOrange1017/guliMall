@@ -10,6 +10,7 @@ import com.xjz.gulimall.product.service.CategoryBrandRelationService;
 import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import utils.Query;
 import com.xjz.gulimall.product.dao.CategoryDao;
 import com.xjz.gulimall.product.entity.CategoryEntity;
@@ -96,6 +97,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     }
 
     @Override
+    @Transactional
     public int updateCategoryById(CategoryEntity category) {
         UpdateWrapper<CategoryEntity> updateWrapper = new UpdateWrapper<CategoryEntity>();
         updateWrapper.eq("cat_id", category.getCatId());

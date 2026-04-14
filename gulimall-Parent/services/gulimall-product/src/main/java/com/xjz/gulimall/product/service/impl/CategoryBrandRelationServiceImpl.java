@@ -57,7 +57,7 @@ public class CategoryBrandRelationServiceImpl extends ServiceImpl<CategoryBrandR
     @Override
     public void updateCategoryName(Long catId, String name) {
         QueryWrapper<CategoryBrandRelationEntity> queryWrapper=new QueryWrapper<>();
-        queryWrapper.eq("cat_id",catId);
+        queryWrapper.eq("catelog_id",catId);
         update(new CategoryBrandRelationEntity(null,null,catId,null,name),queryWrapper);
     }
 }
