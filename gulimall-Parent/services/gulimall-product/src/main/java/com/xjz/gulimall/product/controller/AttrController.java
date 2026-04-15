@@ -70,8 +70,8 @@ public class AttrController {
      */
     @RequestMapping("/update")
     //@RequiresPermissions("coupon:attr:update")
-    public R update(@RequestBody AttrEntity attr){
-		attrService.updateById(attr);
+    public R update(@RequestBody AttrDto attr){
+		attrService.updateAttr(attr);
 
         return R.ok();
     }

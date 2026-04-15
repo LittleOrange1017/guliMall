@@ -20,6 +20,7 @@ import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import utils.PageUtils;
 import utils.Query;
 
@@ -120,6 +121,25 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         Long[] catelogIds = categoryService.findCatelogIds(attrEntity.getCatelogId());
         attrInfoVo.setCatelogPath(catelogIds);
         return attrInfoVo;
+    }
+
+    @Override
+    @Transactional
+    public void updateAttr(AttrDto attr) {
+        //修改基本属性表
+        AttrEntity attrEntity=new AttrEntity();
+        BeanUtils.copyProperties(attr, attrEntity);
+        this.updateById(attrEntity);
+        //修改关联表
+        Long attrGroupId = attr.getAttrGroupId();
+        if(attrGroupId!=null)
+        {
+            AttrAttrgroupRelationEntity attrAttrgroupRelationEntity=new AttrAttrgroupRelationEntity();
+            attrAttrgroupRelationEntity.setAttrId(attr.getAttrId());
+            attrAttrgroupRelationEntity.setAttrGroupId(attrGroupId);
+            attrAttrgroupRelationService.update(attrAttrgroupRelationEntity,new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id",attr.getAttrId()));
+        }
+
     }
 
 }
