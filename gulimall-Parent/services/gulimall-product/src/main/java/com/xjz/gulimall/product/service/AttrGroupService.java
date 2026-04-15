@@ -1,9 +1,12 @@
 package com.xjz.gulimall.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xjz.gulimall.product.dto.AttrGroupRelationDto;
+import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
 import utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,5 +20,9 @@ public interface AttrGroupService extends IService<AttrGroupEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
     PageUtils queryPage(Map<String, Object> params, Long categoryId);
+
+    List<AttrEntity> attrRelation(Long attrGroupId);
+
+    void deleteRelation(List<AttrGroupRelationDto> attrGroupRelationDto);
 }
 

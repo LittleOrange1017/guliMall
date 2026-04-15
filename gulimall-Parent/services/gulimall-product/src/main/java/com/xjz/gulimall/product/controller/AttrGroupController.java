@@ -1,5 +1,7 @@
 package com.xjz.gulimall.product.controller;
 
+import com.xjz.gulimall.product.dto.AttrGroupRelationDto;
+import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
 import com.xjz.gulimall.product.service.AttrGroupService;
 import com.xjz.gulimall.product.service.CategoryService;
@@ -9,6 +11,7 @@ import utils.PageUtils;
 import utils.R;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -73,14 +76,22 @@ public class AttrGroupController {
     }
 
     /**
-     * 删除
+     * 删除对应组下的属性关联
      */
-    @RequestMapping("/delete")
-    //@RequiresPermissions("coupon:attrgroup:delete")
-    public R delete(@RequestBody Long[] attrGroupIds){
-		attrGroupService.removeByIds(Arrays.asList(attrGroupIds));
-
+    @RequestMapping("/attr/relation/delete")
+    public R deleteRelation(@RequestBody List<AttrGroupRelationDto> attrGroupRelationDto)
+    {
+        attrGroupService.deleteRelation(attrGroupRelationDto);
         return R.ok();
+    }
+
+    /**
+     * 查询对应分组下的属性
+     */
+    @RequestMapping("/{attrGroupId}/attr/relation")
+    public R attrRelation(@PathVariable("attrGroupId") Long attrGroupId){
+        List<AttrEntity> attrEntity=attrGroupService.attrRelation(attrGroupId);
+        return R.ok().put("data",attrEntity);
     }
 
 }
