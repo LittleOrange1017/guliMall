@@ -3,6 +3,7 @@ package com.xjz.gulimall.product.controller;
 import com.xjz.gulimall.product.dto.AttrDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.service.AttrService;
+import com.xjz.gulimall.product.vo.AttrInfoVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import utils.PageUtils;
@@ -48,9 +49,9 @@ public class AttrController {
     @RequestMapping("/info/{attrId}")
     //@RequiresPermissions("coupon:attr:info")
     public R info(@PathVariable("attrId") Long attrId){
-		AttrEntity attr = attrService.getById(attrId);
+		AttrInfoVo attrInfoVo = attrService.getInfo(attrId);
 
-        return R.ok().put("attr", attr).put("code",0);
+        return R.ok().put("attr", attrInfoVo);
     }
 
     /**

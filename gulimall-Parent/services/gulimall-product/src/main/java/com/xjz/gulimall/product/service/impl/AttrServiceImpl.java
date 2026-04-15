@@ -13,6 +13,7 @@ import com.xjz.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xjz.gulimall.product.service.AttrGroupService;
 import com.xjz.gulimall.product.service.AttrService;
 import com.xjz.gulimall.product.service.CategoryService;
+import com.xjz.gulimall.product.vo.AttrInfoVo;
 import com.xjz.gulimall.product.vo.AttrVo;
 import org.apache.commons.lang.StringUtils;
 import org.checkerframework.checker.units.qual.A;
@@ -105,6 +106,20 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         PageUtils pageUtils=new PageUtils(page);
         pageUtils.setList(collect);
         return pageUtils;
+    }
+
+    @Override
+    public AttrInfoVo getInfo(Long attrId) {
+        AttrAttrgroupRelationEntity attrAttrgroupRelationEntity = attrAttrgroupRelationService.getOne(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attrId));
+        AttrEntity attrEntity = this.getOne(new QueryWrapper<AttrEntity>().eq("attr_id", attrId));
+        AttrInfoVo attrInfoVo = new AttrInfoVo();
+        BeanUtils.copyProperties(attrEntity, attrInfoVo);
+        if (attrAttrgroupRelationEntity != null) {
+            attrInfoVo.setAttrGroupId(attrAttrgroupRelationEntity.getAttrGroupId());
+        }
+        Long[] catelogIds = categoryService.findCatelogIds(attrEntity.getCatelogId());
+        attrInfoVo.setCatelogPath(catelogIds);
+        return attrInfoVo;
     }
 
 }
