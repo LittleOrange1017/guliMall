@@ -4,6 +4,7 @@ import com.xjz.gulimall.product.dto.AttrGroupRelationDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
 import com.xjz.gulimall.product.service.AttrGroupService;
+import com.xjz.gulimall.product.service.AttrService;
 import com.xjz.gulimall.product.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,8 @@ public class AttrGroupController {
     private AttrGroupService attrGroupService;
     @Autowired
     private CategoryService categoryService;
+    @Autowired
+    private AttrService attrService;
 
     /**
      * 列表
@@ -92,6 +95,15 @@ public class AttrGroupController {
     public R attrRelation(@PathVariable("attrGroupId") Long attrGroupId){
         List<AttrEntity> attrEntity=attrGroupService.attrRelation(attrGroupId);
         return R.ok().put("data",attrEntity);
+    }
+    /**
+     * 查询对应分组下的没有关联的属性
+     */
+    @RequestMapping("/{attrgroupId}/noattr/relation")
+    public R attrNoRelation(@PathVariable("attrgroupId") Long attrgroupId,
+                           @RequestParam Map<String, Object> params){
+        PageUtils page=attrService.attrNoRelation(attrgroupId,params);
+        return R.ok().put("data",page);
     }
 
 }

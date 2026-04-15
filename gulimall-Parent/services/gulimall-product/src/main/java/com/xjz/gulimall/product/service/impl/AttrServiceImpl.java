@@ -151,4 +151,32 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
 
     }
 
+    @Override
+    public PageUtils attrNoRelation(Long attrgroupId, Map<String, Object> params) {
+        AttrGroupEntity attrGroupEntity = attrGroupService.getById(attrgroupId);
+        Long catelogId = attrGroupEntity.getCatelogId();
+        //查出当前分类下的所有分组
+        List<AttrGroupEntity> attrEntities = attrGroupService.list(new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catelogId));
+        List<Long> groupIds = attrEntities.stream().map(AttrGroupEntity::getAttrGroupId).collect(Collectors.toList());
+        //关联表中查出已经关联的属性
+        List<AttrAttrgroupRelationEntity> attrAttrgroupRelationEntities = attrAttrgroupRelationService.list(new QueryWrapper<AttrAttrgroupRelationEntity>().in("attr_group_id", groupIds));
+        List<Long> usedattrIds = attrAttrgroupRelationEntities.stream().map(AttrAttrgroupRelationEntity::getAttrId).collect(Collectors.toList());
+        //构建查询条件
+        QueryWrapper<AttrEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("catelog_id", catelogId).eq("attr_type",1);
+        if(usedattrIds!=null&&usedattrIds.size()>0)
+        {
+            queryWrapper.notIn("attr_id", usedattrIds);
+        }
+        String key = (String) params.get("key");
+        if (!StringUtils.isEmpty(key)) {
+            queryWrapper.and((w) -> {
+                w.eq("attr_id", key).or().like("attr_name", key);
+            });
+        }
+        IPage<AttrEntity> page =this.page(new Query<AttrEntity>().getPage(params), queryWrapper);
+        return new PageUtils(page);
+    }
+
+
 }
