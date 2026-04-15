@@ -7,21 +7,35 @@ import com.xjz.gulimall.product.dao.AttrDao;
 import com.xjz.gulimall.product.dto.AttrDto;
 import com.xjz.gulimall.product.entity.AttrAttrgroupRelationEntity;
 import com.xjz.gulimall.product.entity.AttrEntity;
+import com.xjz.gulimall.product.entity.AttrGroupEntity;
+import com.xjz.gulimall.product.entity.CategoryEntity;
 import com.xjz.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xjz.gulimall.product.service.AttrGroupService;
 import com.xjz.gulimall.product.service.AttrService;
+import com.xjz.gulimall.product.service.CategoryService;
+import com.xjz.gulimall.product.vo.AttrVo;
+import org.apache.commons.lang.StringUtils;
+import org.checkerframework.checker.units.qual.A;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 import utils.Query;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service("attrService")
 public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements AttrService {
     @Autowired
     AttrAttrgroupRelationService attrAttrgroupRelationService;
+    @Autowired
+    AttrGroupService attrGroupService;
+    @Autowired
+    CategoryService categoryService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -47,6 +61,50 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         attrAttrgroupRelationEntity.setAttrId(attrId);
         attrAttrgroupRelationEntity.setAttrGroupId(attrGroupId);
         attrAttrgroupRelationService.save(attrAttrgroupRelationEntity);
+    }
+
+    @Override
+    public PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId) {
+        QueryWrapper<AttrEntity> queryWrapper=new QueryWrapper<>();
+        if(catelogId!=0)
+        {
+            queryWrapper.eq("catelog_id",catelogId);
+        }
+        String key = (String) params.get("key");
+        if(!StringUtils.isEmpty(key))
+        {
+            queryWrapper.and(attrEntityQueryWrapper -> attrEntityQueryWrapper.eq("attr_id",key).or().like("attr_name",key));
+        }
+        IPage<AttrEntity> page = this.page(
+                new Query<AttrEntity>().getPage(params),
+                queryWrapper
+                );
+        List<AttrEntity> records = page.getRecords();
+        List<AttrVo> collect = records.stream().map(attrEntity -> {
+            AttrVo attrVo = new AttrVo();
+            BeanUtils.copyProperties(attrEntity, attrVo);
+            Long attrId = attrEntity.getAttrId();
+            Long catelogId1 = attrEntity.getCatelogId();
+            CategoryEntity categoryEntity = categoryService.getOne(new QueryWrapper<CategoryEntity>().eq("cat_id", catelogId1));
+            if(categoryEntity!=null)
+            {
+                attrVo.setCategoryName(categoryEntity.getName());
+            }
+            AttrAttrgroupRelationEntity attrAttrgroupRelationEntity = attrAttrgroupRelationService.getOne(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id", attrId));
+            if(attrAttrgroupRelationEntity!=null)
+            {
+                Long attrGroupId = attrAttrgroupRelationEntity.getAttrGroupId();
+                AttrGroupEntity attrGroupEntity = attrGroupService.getOne(new QueryWrapper<AttrGroupEntity>().eq("attr_group_id", attrGroupId));
+                if(attrGroupEntity!=null)
+                {
+                    attrVo.setAttrGroupName(attrGroupEntity.getAttrGroupName());
+                }
+            }
+            return attrVo;
+        }).collect(Collectors.toList());
+        PageUtils pageUtils=new PageUtils(page);
+        pageUtils.setList(collect);
+        return pageUtils;
     }
 
 }
