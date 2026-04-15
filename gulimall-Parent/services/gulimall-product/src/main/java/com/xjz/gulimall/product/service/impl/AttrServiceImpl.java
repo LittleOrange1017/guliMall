@@ -16,7 +16,6 @@ import com.xjz.gulimall.product.service.CategoryService;
 import com.xjz.gulimall.product.vo.AttrInfoVo;
 import com.xjz.gulimall.product.vo.AttrVo;
 import org.apache.commons.lang.StringUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,6 @@ import utils.Query;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -66,7 +64,7 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
     }
 
     @Override
-    public PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId) {
+    public PageUtils queryBaseAttrPage(Map<String, Object> params, Long catelogId, String attrType) {
         QueryWrapper<AttrEntity> queryWrapper=new QueryWrapper<>();
         if(catelogId!=0)
         {
@@ -76,6 +74,17 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         if(!StringUtils.isEmpty(key))
         {
             queryWrapper.and(attrEntityQueryWrapper -> attrEntityQueryWrapper.eq("attr_id",key).or().like("attr_name",key));
+        }
+        if(attrType!=null)
+        {
+            if(attrType.equals("base"))
+            {
+                queryWrapper.eq("attr_type",1);
+            }
+            if(attrType.equals("sale"))
+            {
+                queryWrapper.eq("attr_type",0);
+            }
         }
         IPage<AttrEntity> page = this.page(
                 new Query<AttrEntity>().getPage(params),
