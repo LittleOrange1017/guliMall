@@ -25,5 +25,6 @@ public interface AttrGroupService extends IService<AttrGroupEntity> {
 
     void deleteRelation(List<AttrGroupRelationDto> attrGroupRelationDto);
 
+    void addRelation(List<AttrGroupRelationDto> attrGroupRelationDto);
 }
 

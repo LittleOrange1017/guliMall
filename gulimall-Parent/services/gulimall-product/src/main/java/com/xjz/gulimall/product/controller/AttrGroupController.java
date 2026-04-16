@@ -105,5 +105,13 @@ public class AttrGroupController {
         PageUtils page=attrService.attrNoRelation(attrgroupId,params);
         return R.ok().put("data",page);
     }
+    /**
+     * 添加属性关联
+     */
+    @RequestMapping("/attr/relation")
+    public R addRelation(@RequestBody List<AttrGroupRelationDto> attrGroupRelationDto){
+        attrGroupService.addRelation(attrGroupRelationDto);
+        return R.ok();
+    }
 
 }

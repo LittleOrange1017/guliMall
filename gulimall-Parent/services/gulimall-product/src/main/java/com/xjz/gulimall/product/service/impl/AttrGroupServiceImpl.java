@@ -13,6 +13,7 @@ import com.xjz.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xjz.gulimall.product.service.AttrGroupService;
 import com.xjz.gulimall.product.service.AttrService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
@@ -95,6 +96,19 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
         {
             attrAttrgroupRelationService.remove(new QueryWrapper<AttrAttrgroupRelationEntity>().eq("attr_id",attrGroupRelationDto.get(0).getAttrId()));
         }
+    }
+
+    @Override
+    public void addRelation(List<AttrGroupRelationDto> attrGroupRelationDto) {
+        List<AttrAttrgroupRelationEntity> attrAttrgroupRelationEntities = attrGroupRelationDto.stream().map(new Function<AttrGroupRelationDto, AttrAttrgroupRelationEntity>() {
+            @Override
+            public AttrAttrgroupRelationEntity apply(AttrGroupRelationDto attrGroupRelationDto) {
+                AttrAttrgroupRelationEntity attrAttrgroupRelationEntity = new AttrAttrgroupRelationEntity();
+                BeanUtils.copyProperties(attrGroupRelationDto, attrAttrgroupRelationEntity);
+                return attrAttrgroupRelationEntity;
+            }
+        }).collect(Collectors.toList());
+        attrAttrgroupRelationService.saveBatch(attrAttrgroupRelationEntities);
     }
 
 
