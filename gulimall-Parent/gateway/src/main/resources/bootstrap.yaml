@@ -18,15 +18,21 @@ spring:
         - id: third_party_route
           uri: lb://service-thirdparty
           predicates:
-            - Path=/api/thirdparty/**
+            - Path=/api/third/party/**
           filters:
-            - RewritePath=/api/thirdparty/(?<segment>.*), /$\{segment}
+            - RewritePath=/api/third/party/(?<segment>.*), /$\{segment}
         - id: product_route
           uri: lb://service-product
           predicates:
             - Path=/api/product/**
           filters:
             - RewritePath=/api/product/(?<segment>.*), /product/$\{segment}
+        - id: member_route
+          uri: lb://service-member
+          predicates:
+            - Path=/api/member/**
+          filters:
+              - RewritePath=/api/member/(?<segment>.*), /member/$\{segment}
         - id: admin_route
           uri: lb://service-renrenfast
           predicates:

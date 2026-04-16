@@ -6,9 +6,16 @@ import com.xjz.gulimall.product.entity.BrandEntity;
 import com.xjz.gulimall.product.entity.CategoryEntity;
 import com.xjz.gulimall.product.service.BrandService;
 import com.xjz.gulimall.product.service.CategoryService;
+import com.xjz.gulimall.product.vo.BrandOfCatlogVo;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -59,5 +66,18 @@ public class CategoryBrandRelationServiceImpl extends ServiceImpl<CategoryBrandR
         QueryWrapper<CategoryBrandRelationEntity> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq("catelog_id",catId);
         update(new CategoryBrandRelationEntity(null,null,catId,null,name),queryWrapper);
+    }
+
+    @Override
+    public List<BrandOfCatlogVo> brandsList(Long catId) {
+        List<CategoryBrandRelationEntity> list = this.list(new QueryWrapper<CategoryBrandRelationEntity>().eq("catelog_id",catId));
+        return list.stream().map(new Function<CategoryBrandRelationEntity, BrandOfCatlogVo>() {
+            @Override
+            public BrandOfCatlogVo apply(CategoryBrandRelationEntity categoryBrandRelationEntity) {
+                BrandOfCatlogVo brand = new BrandOfCatlogVo();
+                BeanUtils.copyProperties(categoryBrandRelationEntity, brand);
+                return brand;
+            }
+        }).collect(Collectors.toList());
     }
 }
