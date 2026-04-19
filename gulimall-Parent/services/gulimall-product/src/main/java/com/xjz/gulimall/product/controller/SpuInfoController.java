@@ -1,5 +1,6 @@
 package com.xjz.gulimall.product.controller;
 
+import com.xjz.gulimall.product.dto.SpuSaveDto;
 import com.xjz.gulimall.product.entity.SpuInfoEntity;
 import com.xjz.gulimall.product.service.SpuInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +53,8 @@ public class SpuInfoController {
      */
     @RequestMapping("/save")
     //@RequiresPermissions("coupon:spuinfo:save")
-    public R save(@RequestBody SpuInfoEntity spuInfo){
-		spuInfoService.save(spuInfo);
+    public R save(@RequestBody SpuSaveDto spuInfo){
+		spuInfoService.saveSpu(spuInfo);
 
         return R.ok();
     }
