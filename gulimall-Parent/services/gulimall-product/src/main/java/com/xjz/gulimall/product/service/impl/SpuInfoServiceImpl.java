@@ -3,21 +3,18 @@ package com.xjz.gulimall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xjz.gulimall.product.dto.Attr;
 import com.xjz.gulimall.product.dto.SpuSaveDto;
-import com.xjz.gulimall.product.entity.SpuImagesEntity;
-import com.xjz.gulimall.product.entity.SpuInfoDescEntity;
+import com.xjz.gulimall.product.entity.*;
 import com.xjz.gulimall.product.feign.CouponFeginClient;
-import com.xjz.gulimall.product.service.ProductAttrValueService;
-import com.xjz.gulimall.product.service.SpuImagesService;
-import com.xjz.gulimall.product.service.SpuInfoDescService;
+import com.xjz.gulimall.product.service.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import to.SpuBoundTo;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SpuInfoDao;
-import com.xjz.gulimall.product.entity.SpuInfoEntity;
-import com.xjz.gulimall.product.service.SpuInfoService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 import utils.R;
@@ -25,6 +22,9 @@ import utils.R;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service("spuInfoService")
@@ -38,6 +38,12 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     private ProductAttrValueService productAttrValueService;
     @Autowired
     private CouponFeginClient couponFeginClient;
+    @Autowired
+    private SkuInfoService skuInfoService;
+    @Autowired
+    private SkuImagesService skuImagesService;
+    @Autowired
+    private SkuSaleAttrValueService skuSaleAttrValueService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SpuInfoEntity> page = this.page(
@@ -79,6 +85,62 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         {
             throw new RuntimeException("保存积分信息失败");
         }
+        //6.保存SKU
+        List<SpuSaveDto.Skus> skus = dto.getSkus();
+        if(skus!=null&&skus.size()>0)
+        {
+            skus.forEach(skus1 -> saveSkuInfo(skus1, spuInfoEntity));
+        }
     }
 
+    @Override
+    public void saveSkuInfo(SpuSaveDto.Skus skus, SpuInfoEntity spuInfoEntity) {
+        //1.1 保存SKU基本信息
+        SkuInfoEntity skuInfoEntity=new SkuInfoEntity();
+        BeanUtils.copyProperties(skus,skuInfoEntity);
+        skuInfoEntity.setBrandId(spuInfoEntity.getBrandId());
+        skuInfoEntity.setCatalogId(spuInfoEntity.getCatalogId());
+        skuInfoEntity.setSpuId(spuInfoEntity.getId());
+        String desc=new String();
+        for (String s : skus.getDescar()) {
+            desc.join(",",s);
+        }
+        skuInfoEntity.setSkuDesc(desc);
+        //1.2.保存SKU的默认图片信息
+        String defaultImg="";
+        List<SpuSaveDto.Images> images = skus.getImages();
+        for (SpuSaveDto.Images image : images) {
+            if(image.getDefaultImg()==1)
+            {
+                defaultImg=image.getImgUrl();
+            }
+        }
+        skuInfoEntity.setSkuDefaultImg(defaultImg);
+        skuInfoService.saveSkuInfo(skuInfoEntity);
+        //1.3.拿到生成的自增ID
+        Long skuId = skuInfoEntity.getSkuId();
+        //2 保存SKU的图片信息
+        List<SkuImagesEntity> imagesEntities = skus.getImages().stream()
+                .filter(img -> StringUtils.hasLength(img.getImgUrl())) // 过滤空图
+                .map(img -> {
+                    SkuImagesEntity entity = new SkuImagesEntity();
+                    entity.setSkuId(skuId);
+                    entity.setImgUrl(img.getImgUrl());
+                    entity.setDefaultImg(img.getDefaultImg());
+                    return entity;
+                }).collect(Collectors.toList());
+        skuImagesService.saveImages(imagesEntities);
+        //3 保存SKU的销售属性
+        List<Attr> attr = skus.getAttr();
+        List<SkuSaleAttrValueEntity> skuSaleAttrValueEntities = attr.stream().map(new Function<Attr, SkuSaleAttrValueEntity>() {
+            @Override
+            public SkuSaleAttrValueEntity apply(Attr attr) {
+                SkuSaleAttrValueEntity skuSaleAttrValueEntity = new SkuSaleAttrValueEntity();
+                BeanUtils.copyProperties(attr, skuSaleAttrValueEntity);
+                skuSaleAttrValueEntity.setSkuId(skuId);
+                return skuSaleAttrValueEntity;
+            }
+        }).collect(Collectors.toList());
+        skuSaleAttrValueService.saveSkuSaleAttrValue(skuSaleAttrValueEntities);
+    }
 }

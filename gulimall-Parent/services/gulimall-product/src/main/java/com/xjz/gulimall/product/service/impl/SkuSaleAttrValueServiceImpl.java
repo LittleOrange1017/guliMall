@@ -10,6 +10,7 @@ import com.xjz.gulimall.product.service.SkuSaleAttrValueService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -24,6 +25,11 @@ public class SkuSaleAttrValueServiceImpl extends ServiceImpl<SkuSaleAttrValueDao
         );
 
         return new PageUtils(page);
+    }
+
+    @Override
+    public void saveSkuSaleAttrValue(List<SkuSaleAttrValueEntity> skuSaleAttrValueEntities) {
+        this.saveBatch(skuSaleAttrValueEntities);
     }
 
 }

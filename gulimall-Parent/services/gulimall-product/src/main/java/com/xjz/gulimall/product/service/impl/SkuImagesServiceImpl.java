@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import utils.Query;
 import utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -24,6 +25,11 @@ public class SkuImagesServiceImpl extends ServiceImpl<SkuImagesDao, SkuImagesEnt
         );
 
         return new PageUtils(page);
+    }
+
+    @Override
+    public void saveImages(List<SkuImagesEntity> imagesEntities) {
+        this.saveBatch(imagesEntities);
     }
 
 }
