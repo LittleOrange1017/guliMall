@@ -57,8 +57,8 @@ public class SpuSaveDto {
     }
     @Data
     public static class Bounds {
-        public int buyBounds;
-        public int growBounds;
+        public BigDecimal buyBounds;
+        public BigDecimal growBounds;
     }
     @Data
     public static class BaseAttrs {

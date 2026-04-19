@@ -6,18 +6,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjz.gulimall.product.dto.SpuSaveDto;
 import com.xjz.gulimall.product.entity.SpuImagesEntity;
 import com.xjz.gulimall.product.entity.SpuInfoDescEntity;
+import com.xjz.gulimall.product.feign.CouponFeginClient;
 import com.xjz.gulimall.product.service.ProductAttrValueService;
 import com.xjz.gulimall.product.service.SpuImagesService;
 import com.xjz.gulimall.product.service.SpuInfoDescService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import to.SpuBoundTo;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SpuInfoDao;
 import com.xjz.gulimall.product.entity.SpuInfoEntity;
 import com.xjz.gulimall.product.service.SpuInfoService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
+import utils.R;
 
 import java.util.Date;
 import java.util.List;
@@ -33,6 +36,8 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     private SpuImagesService spuImagesService;
     @Autowired
     private ProductAttrValueService productAttrValueService;
+    @Autowired
+    private CouponFeginClient couponFeginClient;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SpuInfoEntity> page = this.page(
@@ -64,6 +69,16 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         //4.保存spu的规格参数
         List<SpuSaveDto.BaseAttrs> baseAttrs = dto.getBaseAttrs();
         productAttrValueService.saveProductAttrValue(spuInfoEntity.getId(),baseAttrs);
+        //5.保存spu的积分信息
+        SpuBoundTo spuBoundTo=new SpuBoundTo();
+        spuBoundTo.setSpuId(spuInfoEntity.getId());
+        spuBoundTo.setBuyBounds(dto.getBounds().buyBounds);
+        spuBoundTo.setGrowBounds(dto.getBounds().growBounds);
+        R r = couponFeginClient.saveSpuBounds(spuBoundTo);
+        if(!r.get("code").equals(0))
+        {
+            throw new RuntimeException("保存积分信息失败");
+        }
     }
 
 }
