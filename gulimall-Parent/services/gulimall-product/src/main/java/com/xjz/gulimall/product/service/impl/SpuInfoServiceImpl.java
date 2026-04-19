@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjz.gulimall.product.dto.SpuSaveDto;
+import com.xjz.gulimall.product.entity.SpuImagesEntity;
 import com.xjz.gulimall.product.entity.SpuInfoDescEntity;
+import com.xjz.gulimall.product.service.ProductAttrValueService;
+import com.xjz.gulimall.product.service.SpuImagesService;
 import com.xjz.gulimall.product.service.SpuInfoDescService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,10 @@ import java.util.Map;
 public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> implements SpuInfoService {
     @Autowired
     private SpuInfoDescService spuInfoDescService;
+    @Autowired
+    private SpuImagesService spuImagesService;
+    @Autowired
+    private ProductAttrValueService productAttrValueService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SpuInfoEntity> page = this.page(
@@ -38,19 +45,25 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
 
     @Override
     public void saveSpu(SpuSaveDto dto) {
-        //保存spu信息
+        //1.保存spu信息
         SpuInfoEntity spuInfoEntity=new SpuInfoEntity();
         BeanUtils.copyProperties(dto,spuInfoEntity);
         spuInfoEntity.setCreateTime(new Date());
         spuInfoEntity.setUpdateTime(new Date());
         this.save(spuInfoEntity);
-        //保存spu的描述图集
+        //2.保存spu的描述图集
         List<String> decript = dto.getDecript();
         SpuInfoDescEntity spuInfoDescEntity=new SpuInfoDescEntity();
         spuInfoDescEntity.setSpuId(spuInfoEntity.getId());
         //我们将图片数组转为逗号分割的字符串
         spuInfoDescEntity.setDecript(String.join(",",decript));
-        spuInfoDescService.save(spuInfoDescEntity);
+        spuInfoDescService.saveSpuInfoDesc(spuInfoDescEntity);
+        //3.保存spu的图片集
+        List<String> images = dto.getImages();
+        spuImagesService.saveImages(spuInfoEntity.getId(),images);
+        //4.保存spu的规格参数
+        List<SpuSaveDto.BaseAttrs> baseAttrs = dto.getBaseAttrs();
+        productAttrValueService.saveProductAttrValue(spuInfoEntity.getId(),baseAttrs);
     }
 
 }

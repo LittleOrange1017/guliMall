@@ -62,7 +62,7 @@ public class SpuSaveDto {
     }
     @Data
     public static class BaseAttrs {
-        public int attrId;
+        public Long attrId;
         public String attrValues;
         public int showDesc;
     }
