@@ -3,6 +3,7 @@ package com.xjz.gulimall.product.feign;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import to.SkuReductionTo;
 import to.SpuBoundTo;
 import utils.R;
@@ -26,5 +27,5 @@ public interface CouponFeginClient {
     @PostMapping("coupon/spubounds/save")
     R saveSpuBounds(@RequestBody SpuBoundTo spuBoundTo);
     @PostMapping("/coupon/skufullreduction/saveinfo")
-    R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestBody BigDecimal price);
+    R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestParam("price") BigDecimal price);
 }

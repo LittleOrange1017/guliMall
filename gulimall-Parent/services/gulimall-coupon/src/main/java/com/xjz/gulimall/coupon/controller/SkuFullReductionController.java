@@ -84,7 +84,7 @@ public class SkuFullReductionController {
         return R.ok();
     }
     @PostMapping("/saveinfo")
-    R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestBody BigDecimal price)
+    R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestParam BigDecimal price)
     {
         skuFullReductionService.saveSkuReduction(skuReductionTo,price);
         return R.ok();

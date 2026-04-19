@@ -18,8 +18,8 @@ import java.util.List;
 public class SpuSaveDto {
     public String spuName ;
     public String spuDescription ;
-    public int catalogId ;
-    public int brandId ;
+    public Long catalogId ;
+    public Long brandId ;
     public BigDecimal weight ;
     public int publishStatus ;
     public List<String> decript ;

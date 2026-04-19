@@ -148,7 +148,22 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         SkuReductionTo skuReductionTo=new SkuReductionTo();
         BeanUtils.copyProperties(skus,skuReductionTo);
         skuReductionTo.setSkuId(skuId);
-        if (skuReductionTo.getFullCount() > 0 || skuReductionTo.getFullPrice().compareTo(BigDecimal.ZERO) > 0) {
+        if (skus.getMemberPrice() != null && !skus.getMemberPrice().isEmpty()) {
+            List<SkuReductionTo.MemberPrice> memberPrices = skus.getMemberPrice().stream().map(item -> {
+                SkuReductionTo.MemberPrice memberPrice = new SkuReductionTo.MemberPrice();
+                memberPrice.setId((long) item.getId());
+                memberPrice.setName(item.getName());
+                memberPrice.setPrice(item.getPrice());
+                return memberPrice;
+            }).collect(Collectors.toList());
+            skuReductionTo.setMemberPrice(memberPrices);
+        }
+        boolean hasCountDiscount = skuReductionTo.getFullCount() > 0;
+        boolean hasPriceReduction = skuReductionTo.getFullPrice() != null
+                && skuReductionTo.getFullPrice().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasMemberPrice = skuReductionTo.getMemberPrice() != null
+                && !skuReductionTo.getMemberPrice().isEmpty();
+        if (hasCountDiscount || hasPriceReduction || hasMemberPrice) {
             R r = couponFeginClient.saveSkuReduction(skuReductionTo,skus.getPrice());
             if (!r.get("code").equals(0)) {
                 throw new RuntimeException("保存优惠信息失败");
