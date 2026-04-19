@@ -12,6 +12,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import to.SkuReductionTo;
 import to.SpuBoundTo;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SpuInfoDao;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import utils.PageUtils;
 import utils.R;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -142,5 +144,15 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             }
         }).collect(Collectors.toList());
         skuSaleAttrValueService.saveSkuSaleAttrValue(skuSaleAttrValueEntities);
+        //4 远程调用 保存SKU的优惠信息
+        SkuReductionTo skuReductionTo=new SkuReductionTo();
+        BeanUtils.copyProperties(skus,skuReductionTo);
+        skuReductionTo.setSkuId(skuId);
+        if (skuReductionTo.getFullCount() > 0 || skuReductionTo.getFullPrice().compareTo(BigDecimal.ZERO) > 0) {
+            R r = couponFeginClient.saveSkuReduction(skuReductionTo,skus.getPrice());
+            if (!r.get("code").equals(0)) {
+                throw new RuntimeException("保存优惠信息失败");
+            }
+        }
     }
 }

@@ -1,16 +1,14 @@
 package com.xjz.gulimall.coupon.controller;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.xjz.gulimall.coupon.entity.SkuFullReductionEntity;
 import com.xjz.gulimall.coupon.service.SkuFullReductionService;
+import to.SkuReductionTo;
 import utils.PageUtils;
 import utils.R;
 
@@ -85,5 +83,10 @@ public class SkuFullReductionController {
 
         return R.ok();
     }
-
+    @PostMapping("/saveinfo")
+    R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestBody BigDecimal price)
+    {
+        skuFullReductionService.saveSkuReduction(skuReductionTo,price);
+        return R.ok();
+    }
 }

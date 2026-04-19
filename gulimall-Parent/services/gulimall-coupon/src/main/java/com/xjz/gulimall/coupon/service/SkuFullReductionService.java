@@ -1,9 +1,11 @@
 package com.xjz.gulimall.coupon.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import to.SkuReductionTo;
 import utils.PageUtils;
 import com.xjz.gulimall.coupon.entity.SkuFullReductionEntity;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -16,5 +18,8 @@ import java.util.Map;
 public interface SkuFullReductionService extends IService<SkuFullReductionEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    void saveSkuReduction(SkuReductionTo skuReductionTo, BigDecimal price);
+
 }
 

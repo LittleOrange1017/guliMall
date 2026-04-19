@@ -26,4 +26,9 @@ public class SkuLadderServiceImpl extends ServiceImpl<SkuLadderDao, SkuLadderEnt
         return new PageUtils(page);
     }
 
+    @Override
+    public void saveSkuLadder(SkuLadderEntity skuLadderEntity) {
+        this.save(skuLadderEntity);
+    }
+
 }
