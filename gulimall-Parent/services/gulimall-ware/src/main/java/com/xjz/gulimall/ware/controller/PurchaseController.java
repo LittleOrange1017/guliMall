@@ -9,32 +9,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.xjz.gulimall.ware.entity.FeightTemplateEntity;
-import com.xjz.gulimall.ware.service.FeightTemplateService;
+import com.xjz.gulimall.ware.entity.PurchaseEntity;
+import com.xjz.gulimall.ware.service.PurchaseService;
 import utils.PageUtils;
 import utils.R;
 
 
 /**
- * 运费模板
+ * 采购信息
  *
  * @author xjz
  * @email lo_17@163.com
- * @date 2026-03-12 11:16:23
+ * @date 2026-04-20 15:04:30
  */
 @RestController
-@RequestMapping("ware/feighttemplate")
-public class FeightTemplateController {
+@RequestMapping("ware/purchase")
+public class PurchaseController {
     @Autowired
-    private FeightTemplateService feightTemplateService;
+    private PurchaseService purchaseService;
 
     /**
      * 列表
      */
     @RequestMapping("/list")
-    //@RequiresPermissions("ware:feighttemplate:list")
+    //@RequiresPermissions("ware:purchase:list")
     public R list(@RequestParam Map<String, Object> params){
-        PageUtils page = feightTemplateService.queryPage(params);
+        PageUtils page = purchaseService.queryPage(params);
 
         return R.ok().put("page", page);
     }
@@ -44,20 +44,20 @@ public class FeightTemplateController {
      * 信息
      */
     @RequestMapping("/info/{id}")
-    //@RequiresPermissions("ware:feighttemplate:info")
+    //@RequiresPermissions("ware:purchase:info")
     public R info(@PathVariable("id") Long id){
-		FeightTemplateEntity feightTemplate = feightTemplateService.getById(id);
+        PurchaseEntity purchase = purchaseService.getById(id);
 
-        return R.ok().put("feightTemplate", feightTemplate);
+        return R.ok().put("purchase", purchase);
     }
 
     /**
      * 保存
      */
     @RequestMapping("/save")
-    //@RequiresPermissions("ware:feighttemplate:save")
-    public R save(@RequestBody FeightTemplateEntity feightTemplate){
-		feightTemplateService.save(feightTemplate);
+    //@RequiresPermissions("ware:purchase:save")
+    public R save(@RequestBody PurchaseEntity purchase){
+        purchaseService.save(purchase);
 
         return R.ok();
     }
@@ -66,9 +66,9 @@ public class FeightTemplateController {
      * 修改
      */
     @RequestMapping("/update")
-    //@RequiresPermissions("ware:feighttemplate:update")
-    public R update(@RequestBody FeightTemplateEntity feightTemplate){
-		feightTemplateService.updateById(feightTemplate);
+    //@RequiresPermissions("ware:purchase:update")
+    public R update(@RequestBody PurchaseEntity purchase){
+        purchaseService.updateById(purchase);
 
         return R.ok();
     }
@@ -77,9 +77,9 @@ public class FeightTemplateController {
      * 删除
      */
     @RequestMapping("/delete")
-    //@RequiresPermissions("ware:feighttemplate:delete")
+    //@RequiresPermissions("ware:purchase:delete")
     public R delete(@RequestBody Long[] ids){
-		feightTemplateService.removeByIds(Arrays.asList(ids));
+        purchaseService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
     }

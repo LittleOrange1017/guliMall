@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import utils.PageUtils;
 import utils.R;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -79,5 +80,11 @@ public class SkuInfoController {
 
         return R.ok();
     }
+    @PostMapping("/getSkuInfo")
+    public BigDecimal getSkuInfo(@RequestParam("skuId") Long skuId){
+        SkuInfoEntity skuInfoEntity=skuInfoService.getSkuInfo(skuId);
+        return skuInfoEntity.getPrice();
+    }
+
 
 }

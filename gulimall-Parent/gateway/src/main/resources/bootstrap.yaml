@@ -33,6 +33,12 @@ spring:
             - Path=/api/member/**
           filters:
               - RewritePath=/api/member/(?<segment>.*), /member/$\{segment}
+        - id: ware-route
+          uri: lb://service-ware
+          predicates:
+            - Path=/api/ware/**
+          filters:
+            - RewritePath=/api/ware/(?<segment>.*), /ware/$\{segment}
         - id: admin_route
           uri: lb://service-renrenfast
           predicates:

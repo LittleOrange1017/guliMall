@@ -9,49 +9,57 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 运费模板
+ * 采购信息
  * 
  * @author xjz
  * @email lo_17@163.com
- * @date 2026-03-12 11:16:23
+ * @date 2026-04-20 15:04:30
  */
 @Data
-@TableName("wms_feight_template")
-public class FeightTemplateEntity implements Serializable {
+@TableName("wms_purchase")
+public class PurchaseEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * id
+	 * 
 	 */
 	@TableId
 	private Long id;
 	/**
-	 * name
+	 * 
 	 */
-	private String name;
+	private Long assigneeId;
 	/**
-	 * 计费类型【0->按重量，1->按件数】
+	 * 
 	 */
-	private Integer chargeType;
+	private String assigneeName;
 	/**
-	 * 首重
+	 * 
 	 */
-	private BigDecimal firstWeight;
+	private String phone;
 	/**
-	 * 首费
+	 * 
 	 */
-	private BigDecimal firstFee;
+	private Integer priority;
 	/**
-	 * 续重
+	 * 
 	 */
-	private BigDecimal continueWeight;
+	private Integer status;
 	/**
-	 * 续费
+	 * 
 	 */
-	private BigDecimal continueFee;
+	private Long wareId;
 	/**
-	 * 目的地
+	 * 
 	 */
-	private Long dest;
+	private BigDecimal amount;
+	/**
+	 * 
+	 */
+	private Date createTime;
+	/**
+	 * 
+	 */
+	private Date updateTime;
 
 }

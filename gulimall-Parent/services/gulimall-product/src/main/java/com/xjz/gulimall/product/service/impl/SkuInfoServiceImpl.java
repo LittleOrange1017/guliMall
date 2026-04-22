@@ -70,4 +70,9 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
         this.save(skuInfoEntity);
     }
 
+    @Override
+    public SkuInfoEntity getSkuInfo(Long skuId) {
+        return this.getById(skuId);
+    }
+
 }
