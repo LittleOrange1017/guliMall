@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.xjz.gulimall.ware.dto.MergeDto;
+import com.xjz.gulimall.ware.dto.PurchaseDoneDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -99,6 +100,11 @@ public class PurchaseController {
     @RequestMapping("/received")
     public R received(@RequestBody List<Long> ids) {
         purchaseService.received(ids);
+        return R.ok();
+    }
+    @RequestMapping("/done")
+    public R done(@RequestBody PurchaseDoneDto doneDto) {
+        purchaseService.done(doneDto);
         return R.ok();
     }
 }

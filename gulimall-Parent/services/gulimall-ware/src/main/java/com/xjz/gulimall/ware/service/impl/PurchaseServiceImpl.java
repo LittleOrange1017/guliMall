@@ -2,15 +2,22 @@ package com.xjz.gulimall.ware.service.impl;
 
 import com.xjz.gulimall.ware.constant.WareConstant;
 import com.xjz.gulimall.ware.dto.MergeDto;
+import com.xjz.gulimall.ware.dto.PurchaseDoneDto;
+import com.xjz.gulimall.ware.dto.PurchaseItemDoneDto;
 import com.xjz.gulimall.ware.entity.PurchaseDetailEntity;
+import com.xjz.gulimall.ware.entity.WareSkuEntity;
 import com.xjz.gulimall.ware.service.PurchaseDetailService;
+import com.xjz.gulimall.ware.service.WareSkuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -32,6 +39,8 @@ import utils.R;
 public class PurchaseServiceImpl extends ServiceImpl<PurchaseDao, PurchaseEntity> implements PurchaseService {
     @Autowired
     private PurchaseDetailService purchaseDetailService;
+    @Autowired
+    private WareSkuService wareSkuService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<PurchaseEntity> page = this.page(
@@ -158,6 +167,48 @@ public class PurchaseServiceImpl extends ServiceImpl<PurchaseDao, PurchaseEntity
                 purchaseDetailService.updateBatchById(detailCollect);
             });
         }
+    }
+
+    @Override
+    @Transactional
+    public void done(PurchaseDoneDto doneDto) {
+        //1.更新采购需求单状态
+        //1.1 标记采购单底下的所有采购需求单为【完成】
+        Boolean flag = true;
+        List<PurchaseItemDoneDto> items = doneDto.getItems();
+        List<PurchaseDetailEntity> updates = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for(PurchaseItemDoneDto item:items)
+        {
+            PurchaseDetailEntity purchaseDetailEntity=new PurchaseDetailEntity();
+            if(item.getStatus().equals(WareConstant.PurchaseDetailStatusEnum.HASERROR.getCode()))
+            {
+                flag=false;
+                purchaseDetailEntity.setStatus(WareConstant.PurchaseDetailStatusEnum.HASERROR.getCode());
+            }
+            else
+            {
+                purchaseDetailEntity.setStatus(WareConstant.PurchaseDetailStatusEnum.FINISH.getCode());
+                //3.将已完成的采购需求单的采购数量同步到sku的库存中
+                PurchaseDetailEntity detailEntity = purchaseDetailService.getById(item.getItemId());
+                wareSkuService.addStock(detailEntity.getSkuId(),detailEntity.getWareId(),detailEntity.getSkuNum());
+                BigDecimal skuPrice = purchaseDetailEntity.getSkuPrice();
+                Integer skuNum = purchaseDetailEntity.getSkuNum();
+                totalAmount=totalAmount.add(skuPrice.multiply(BigDecimal.valueOf(skuNum)));
+            }
+            purchaseDetailEntity.setId(item.getItemId());
+            updates.add(purchaseDetailEntity);
+        }
+        purchaseDetailService.updateBatchById(updates);
+        //2 改变采购单状态
+        Long id=doneDto.getId();
+        PurchaseEntity purchase=new PurchaseEntity();
+        purchase.setId(id);
+        purchase.setUpdateTime(new Date());
+        purchase.setStatus(flag?WareConstant.PurchaseStatusEnum.FINISH.getCode() : WareConstant.PurchaseStatusEnum.HASERROR.getCode());
+        //4 计算并回填采购单下所有已完成的需求单的金额
+        purchase.setAmount(totalAmount);
+        this.updateById(purchase);
     }
 
 }
