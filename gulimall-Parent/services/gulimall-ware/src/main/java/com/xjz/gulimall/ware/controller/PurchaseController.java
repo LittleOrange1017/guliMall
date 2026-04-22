@@ -2,6 +2,8 @@ package com.xjz.gulimall.ware.controller;
 
 import java.util.Arrays;
 import java.util.Map;
+
+import com.xjz.gulimall.ware.dto.MergeDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,8 +59,7 @@ public class PurchaseController {
     @RequestMapping("/save")
     //@RequiresPermissions("ware:purchase:save")
     public R save(@RequestBody PurchaseEntity purchase){
-        purchaseService.save(purchase);
-
+        purchaseService.Mysave(purchase);
         return R.ok();
     }
 
@@ -88,5 +89,10 @@ public class PurchaseController {
         PageUtils page = purchaseService.queryPageUnreceivePurchase(params);
 
         return R.ok().put("page", page);
+    }
+    @RequestMapping("/merge")
+    public R merge(@RequestBody MergeDto mergeDto){
+        purchaseService.merge(mergeDto);
+        return R.ok();
     }
 }

@@ -1,6 +1,7 @@
 package com.xjz.gulimall.ware.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xjz.gulimall.ware.dto.MergeDto;
 import com.xjz.gulimall.ware.entity.PurchaseEntity;
 import utils.PageUtils;
 
@@ -18,5 +19,9 @@ public interface PurchaseService extends IService<PurchaseEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     PageUtils queryPageUnreceivePurchase(Map<String, Object> params);
+
+    void merge(MergeDto mergeDto);
+
+    void Mysave(PurchaseEntity purchase);
 }
 
