@@ -120,12 +120,9 @@ public class PurchaseServiceImpl extends ServiceImpl<PurchaseDao, PurchaseEntity
         if (ids == null || ids.size() == 0) {
             return;
         }
-
         // 1. 确认当前采购单是【新建】或【已分配】状态
-        List<PurchaseEntity> collect = ids.stream().map(id -> {
-            // 获取数据库中最新的采购单数据
-            return this.getById(id);
-        }).filter(item -> {
+        // 获取数据库中最新的采购单数据
+        List<PurchaseEntity> collect = ids.stream().map(this::getById).filter(item -> {
             // 防御校验：只允许状态为 0 或 1 的通过
             return item.getStatus() == WareConstant.PurchaseStatusEnum.CREATED.getCode() ||
                     item.getStatus() == WareConstant.PurchaseStatusEnum.ASSIGNED.getCode();
