@@ -1,6 +1,7 @@
 package com.xjz.gulimall.ware.controller;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import com.xjz.gulimall.ware.dto.MergeDto;
@@ -93,6 +94,11 @@ public class PurchaseController {
     @RequestMapping("/merge")
     public R merge(@RequestBody MergeDto mergeDto){
         purchaseService.merge(mergeDto);
+        return R.ok();
+    }
+    @RequestMapping("/received")
+    public R received(@RequestBody List<Long> ids) {
+        purchaseService.received(ids);
         return R.ok();
     }
 }

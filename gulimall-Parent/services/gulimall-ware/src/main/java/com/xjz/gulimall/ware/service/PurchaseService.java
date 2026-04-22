@@ -5,6 +5,7 @@ import com.xjz.gulimall.ware.dto.MergeDto;
 import com.xjz.gulimall.ware.entity.PurchaseEntity;
 import utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,5 +24,7 @@ public interface PurchaseService extends IService<PurchaseEntity> {
     void merge(MergeDto mergeDto);
 
     void Mysave(PurchaseEntity purchase);
+
+    void received(List<Long> ids);
 }
 

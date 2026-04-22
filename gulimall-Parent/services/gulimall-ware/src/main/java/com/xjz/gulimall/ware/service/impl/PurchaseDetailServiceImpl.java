@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -40,6 +41,11 @@ public class PurchaseDetailServiceImpl extends ServiceImpl<PurchaseDetailDao, Pu
         BigDecimal skuNum = BigDecimal.valueOf(purchaseDetail.getSkuNum());
         purchaseDetail.setSkuPrice(price.multiply(skuNum));
         this.save(purchaseDetail);
+    }
+
+    @Override
+    public List<PurchaseDetailEntity> listDetailByPurchaseId(Long id) {
+        return this.list(new QueryWrapper<PurchaseDetailEntity>().eq("purchase_id",id));
     }
 
 }
