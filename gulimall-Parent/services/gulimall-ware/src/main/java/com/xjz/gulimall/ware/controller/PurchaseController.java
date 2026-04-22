@@ -83,5 +83,10 @@ public class PurchaseController {
 
         return R.ok();
     }
+    @RequestMapping("/unreceive/list")
+    public R unreceiveList(@RequestParam Map<String, Object> params){
+        PageUtils page = purchaseService.queryPageUnreceivePurchase(params);
 
+        return R.ok().put("page", page);
+    }
 }
