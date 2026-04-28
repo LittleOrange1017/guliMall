@@ -6,6 +6,7 @@
         <artifactId>gulimall-Parent</artifactId>
         <groupId>com.xjz</groupId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <modules>
@@ -15,6 +16,7 @@
         <module>gulimall-product</module>
         <module>gulimall-ware</module>
         <module>gulimall-thirdParty</module>
+        <module>gulimall-search</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>

@@ -23,3 +23,4 @@ buildNumber.properties
 out/
 /gulimall-Parent/renren-fast/.gitignore
 /gulimall-Parent/renren-generator/.gitignore
+/.github/copilot-instructions.md

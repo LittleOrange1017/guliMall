@@ -6,6 +6,7 @@
         <artifactId>gulimall-Parent</artifactId>
         <groupId>com.xjz</groupId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,6 +16,8 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <commons.lang.version>2.6</commons.lang.version>
+        <!-- Elasticsearch 版本 -->
+        <spring-data-elasticsearch.version>4.3.0</spring-data-elasticsearch.version>
     </properties>
     <description>
         公共模块, 一些公用的类, 比如工具类, 配置类, 枚举类等等
@@ -107,6 +110,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- Elasticsearch 依赖 -->
     </dependencies>
 
 </project>

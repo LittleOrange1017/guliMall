@@ -3,35 +3,35 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>com.xjz</groupId>
-    <artifactId>gateway</artifactId>
-    <version>1.0-SNAPSHOT</version>
     <parent>
-        <artifactId>gulimall-Parent</artifactId>
         <groupId>com.xjz</groupId>
+        <artifactId>services</artifactId>
         <version>1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
+
+    <artifactId>gulimall-search</artifactId>
+
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <elasticsearch.version>7.8.0</elasticsearch.version>
     </properties>
     <dependencies>
+        <!-- 2. 引入你刚刚整理好的、极其干净的 common 模块 -->
+        <!-- 这样 search 服务就拥有了 Web、Mybatis-Plus、Nacos、Sentinel、Feign 等所有基础能力 -->
         <dependency>
             <groupId>com.xjz</groupId>
             <artifactId>common</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>mybatis-plus-boot-starter</artifactId>
-                    <groupId>com.baomidou</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-web</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+
+        <!-- 3. ES 官方核心客户端 (绝不放 common 里，只放 search 里！) -->
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>${elasticsearch.version}</version>
         </dependency>
     </dependencies>
 </project>

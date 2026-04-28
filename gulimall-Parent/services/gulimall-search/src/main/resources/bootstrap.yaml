@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: service-search
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+        file-extension: yaml
+        group: service-search
+        extension-configs:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+server:
+  port: 13000
+logging:
+  level:
+    com.xjz.gulimall: debug
