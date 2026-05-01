@@ -24,3 +24,5 @@ out/
 /gulimall-Parent/renren-fast/.gitignore
 /gulimall-Parent/renren-generator/.gitignore
 /.github/copilot-instructions.md
+/gulimall-Parent/services/gulimall-search/src/test/java/com/xjz/gulimall/search/TestAPI.java
+/.claude/settings.json
