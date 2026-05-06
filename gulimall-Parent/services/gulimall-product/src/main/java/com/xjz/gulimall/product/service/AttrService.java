@@ -6,6 +6,7 @@ import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.vo.AttrInfoVo;
 import utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,5 +29,7 @@ public interface AttrService extends IService<AttrEntity> {
     void updateAttr(AttrDto attr);
 
     PageUtils attrNoRelation(Long attrgroupId, Map<String, Object> params);
+
+    List<Long> selectSearchAttrIds(List<Long> attrIds);
 }
 

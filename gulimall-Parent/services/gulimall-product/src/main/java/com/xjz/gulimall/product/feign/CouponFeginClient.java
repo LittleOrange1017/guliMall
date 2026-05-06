@@ -24,7 +24,7 @@ public interface CouponFeginClient {
     /**
      * 调用service-coupon的接口保存积分信息
      */
-    @PostMapping("coupon/spubounds/save")
+    @PostMapping("/coupon/spubounds/save")
     R saveSpuBounds(@RequestBody SpuBoundTo spuBoundTo);
     @PostMapping("/coupon/skufullreduction/saveinfo")
     R saveSkuReduction(@RequestBody SkuReductionTo skuReductionTo, @RequestParam("price") BigDecimal price);

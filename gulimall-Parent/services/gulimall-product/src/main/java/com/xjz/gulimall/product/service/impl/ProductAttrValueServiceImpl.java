@@ -14,6 +14,7 @@ import com.xjz.gulimall.product.service.ProductAttrValueService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -50,6 +51,13 @@ public class ProductAttrValueServiceImpl extends ServiceImpl<ProductAttrValueDao
             }
         }).collect(Collectors.toList());
         this.saveBatch(attrValueEntities);
+    }
+
+    @Override
+    public List<ProductAttrValueEntity> baseAttrlistforspu(Long spuId) {
+        QueryWrapper<ProductAttrValueEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("spu_id",spuId);
+        return this.list(queryWrapper);
     }
 
 }

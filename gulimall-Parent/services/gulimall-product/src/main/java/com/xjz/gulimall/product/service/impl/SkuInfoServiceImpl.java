@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -73,6 +75,13 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
     @Override
     public SkuInfoEntity getSkuInfo(Long skuId) {
         return this.getById(skuId);
+    }
+
+    @Override
+    public List<SkuInfoEntity> getSkuBySpuId(Long spuId) {
+        QueryWrapper<SkuInfoEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("spu_id",spuId);
+        return list(queryWrapper);
     }
 
 }

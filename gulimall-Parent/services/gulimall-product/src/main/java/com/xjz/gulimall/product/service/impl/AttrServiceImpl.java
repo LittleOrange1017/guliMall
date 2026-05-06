@@ -23,8 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import utils.PageUtils;
 import utils.Query;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -176,6 +178,14 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
         }
         IPage<AttrEntity> page =this.page(new Query<AttrEntity>().getPage(params), queryWrapper);
         return new PageUtils(page);
+    }
+
+    @Override
+    public List<Long> selectSearchAttrIds(List<Long> attrIds) {
+        QueryWrapper<AttrEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("search_type",1);
+        List<AttrEntity> attrEntities = this.listByIds(attrIds);
+        return attrEntities.stream().map(attrEntity -> attrEntity.getAttrId()).collect(Collectors.toList());
     }
 
 

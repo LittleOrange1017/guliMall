@@ -7,25 +7,29 @@ import com.xjz.gulimall.product.dto.Attr;
 import com.xjz.gulimall.product.dto.SpuSaveDto;
 import com.xjz.gulimall.product.entity.*;
 import com.xjz.gulimall.product.feign.CouponFeginClient;
+import com.xjz.gulimall.product.feign.WareFeginClient;
 import com.xjz.gulimall.product.service.*;
+import javafx.concurrent.Worker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import to.SkuEsModel;
 import to.SkuReductionTo;
+import to.SkuStockTo;
 import to.SpuBoundTo;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SpuInfoDao;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 import utils.R;
+import vo.SkuHasStockVo;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -46,6 +50,14 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     private SkuImagesService skuImagesService;
     @Autowired
     private SkuSaleAttrValueService skuSaleAttrValueService;
+    @Autowired
+    private BrandService brandService;
+    @Autowired
+    private CategoryService categoryService;
+    @Autowired
+    private WareFeginClient wareFeginClient;
+    @Autowired
+    private AttrService attrService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SpuInfoEntity> page = this.page(
@@ -196,5 +208,70 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                 queryWrapper
         );
         return new PageUtils(page);
+    }
+
+    @Override
+    @Transactional
+    public void up(Long spuId) {
+        //TODO 1、根据spuId查询出对应的sku列表
+        List<SkuInfoEntity> skuInfoEntities = skuInfoService.getSkuBySpuId(spuId);
+        //TODO 2、查询出SkuId的集合
+        List<Long> skuIdList = skuInfoEntities.stream().map(skuInfoEntity -> skuInfoEntity.getSkuId()).collect(Collectors.toList());
+        //TODO 3、查出当前 spu 的所有基础规格属性
+        List<ProductAttrValueEntity> baseAttrs = productAttrValueService.baseAttrlistforspu(spuId);
+        //TODO 4、拿着attrIds集合，去 pms_attr 表里过滤出 search_type = 1 的属性Id
+        List<Long> attrIds = baseAttrs.stream().map(productAttrValueEntity -> productAttrValueEntity.getAttrId()).collect(Collectors.toList());
+        List<Long> searchAttrIds = attrService.selectSearchAttrIds(attrIds);
+        //TODO 5、组装最终需要放入 ES 的属性集合
+        Set<Long> idSet = new HashSet<>(searchAttrIds);
+        List<SkuEsModel.Attrs> attrsList = baseAttrs.stream().filter(productAttrValueEntity -> idSet.contains(productAttrValueEntity.getAttrId()))
+                .map(productAttrValueEntity -> {
+                    SkuEsModel.Attrs attrs = new SkuEsModel.Attrs();
+                    attrs.setAttrId(productAttrValueEntity.getAttrId());
+                    attrs.setAttrValue(productAttrValueEntity.getAttrValue());
+                    attrs.setAttrName(productAttrValueEntity.getAttrName());
+                    return attrs;
+                }).collect(Collectors.toList());
+        //TODO 6、发送库存系统远程调用，批量查询对应的SkuId的库存是否有无
+        Map<Long, Boolean> stockMap = null;
+        try {
+            SkuStockTo skuStockTo = new SkuStockTo();
+            skuStockTo.setSkuId(skuIdList);
+            List<SkuHasStockVo> hasStockList = wareFeginClient.getSkuStockBySpuId(skuStockTo);
+            // 核心魔法：将 List 转化为 Map<skuId, hasStock>
+            if (hasStockList != null) {
+                stockMap = hasStockList.stream().collect(
+                        Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock)
+                );
+            }
+        } catch (Exception e) {
+            log.error("库存服务调用异常：原因 {}", e);
+            // 如果触发了 catch（比如网络中断），stockMap 将保持为 null。
+            // 这是一种防御性编程策略：如果查库存失败，后续代码我们会默认设定为有库存（容错兜底）。
+        }
+        // 优化：品牌和分类信息同一个 SPU 都是一样的，查1次就行！
+        BrandEntity brand = brandService.getById(skuInfoEntities.get(0).getBrandId());
+        CategoryEntity category = categoryService.getById(skuInfoEntities.get(0).getCatalogId());
+        //TODO 7、正式组装 ES 数据模型
+        Map<Long, Boolean> finalStockMap = stockMap;
+        List<SkuEsModel> skuEsModels = skuInfoEntities.stream().map(new Function<SkuInfoEntity, SkuEsModel>() {
+            @Override
+            public SkuEsModel apply(SkuInfoEntity skuInfoEntity) {
+                SkuEsModel skuEsModel = new SkuEsModel();
+                BeanUtils.copyProperties(skuInfoEntity, skuEsModel);
+                skuEsModel.setHotScore(0L);
+                skuEsModel.setSkuImg(skuInfoEntity.getSkuDefaultImg());
+                skuEsModel.setSkuPrice(skuInfoEntity.getPrice());
+                skuEsModel.setBrandName(brand.getName());
+                skuEsModel.setBrandImg(brand.getLogo());
+                skuEsModel.setCatalogName(category.getName());
+                // 挂载循环外组装好的检索属性
+                skuEsModel.setAttrs(attrsList);
+                skuEsModel.setHasStock(finalStockMap.get(skuEsModel.getSkuId()));
+                return skuEsModel;
+            }
+        }).collect(Collectors.toList());
+        //TODO 8、批量发给 ES 保存
+
     }
 }
