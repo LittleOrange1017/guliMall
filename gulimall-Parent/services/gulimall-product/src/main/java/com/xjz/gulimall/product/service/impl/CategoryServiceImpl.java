@@ -146,12 +146,19 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
                 redisTemplate.opsForValue().set(catalogJSONKey,"empty",5,TimeUnit.SECONDS);
                 return new HashMap<>();
             }
-            String json = JSON.toJSONString(stringListMap);
-            redisTemplate.opsForValue().set(catalogJSONKey,json,500, TimeUnit.SECONDS);
-            return stringListMap;
+            else
+            {
+                String json = JSON.toJSONString(stringListMap);
+                redisTemplate.opsForValue().set(catalogJSONKey,json,500, TimeUnit.SECONDS);
+                return stringListMap;
+            }
         }
         else
         {
+            if(catelogJSON.equals("empty"))
+            {
+                return new HashMap<>();
+            }
             Map<String, List<Catelog2Vo>> result = JSON.parseObject(
                     catelogJSON,
                     new TypeReference<Map<String, List<Catelog2Vo>>>() {}
