@@ -6,10 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjz.gulimall.product.dto.Attr;
 import com.xjz.gulimall.product.dto.SpuSaveDto;
 import com.xjz.gulimall.product.entity.*;
-import com.xjz.gulimall.product.feign.CouponFeginClient;
-import com.xjz.gulimall.product.feign.WareFeginClient;
+import com.xjz.gulimall.product.feign.CouponFeignClient;
+import com.xjz.gulimall.product.feign.SearchFeignClient;
+import com.xjz.gulimall.product.feign.WareFeignClient;
 import com.xjz.gulimall.product.service.*;
-import javafx.concurrent.Worker;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +27,7 @@ import vo.SkuHasStockVo;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -43,7 +41,7 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     @Autowired
     private ProductAttrValueService productAttrValueService;
     @Autowired
-    private CouponFeginClient couponFeginClient;
+    private CouponFeignClient couponFeginClient;
     @Autowired
     private SkuInfoService skuInfoService;
     @Autowired
@@ -55,9 +53,11 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     @Autowired
     private CategoryService categoryService;
     @Autowired
-    private WareFeginClient wareFeginClient;
+    private WareFeignClient wareFeignClient;
     @Autowired
     private AttrService attrService;
+    @Autowired
+    private SearchFeignClient searchFeignClient;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SpuInfoEntity> page = this.page(
@@ -237,7 +237,7 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         try {
             SkuStockTo skuStockTo = new SkuStockTo();
             skuStockTo.setSkuId(skuIdList);
-            List<SkuHasStockVo> hasStockList = wareFeginClient.getSkuStockBySpuId(skuStockTo);
+            List<SkuHasStockVo> hasStockList = wareFeignClient.getSkuStockBySpuId(skuStockTo);
             // 核心魔法：将 List 转化为 Map<skuId, hasStock>
             if (hasStockList != null) {
                 stockMap = hasStockList.stream().collect(
@@ -272,6 +272,15 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             }
         }).collect(Collectors.toList());
         //TODO 8、批量发给 ES 保存
-
+        R r = searchFeignClient.saveUp(skuEsModels);
+        if(r.get("code").equals(0))
+        {
+            // 远程调用成功，修改spu状态为"已上架"
+            SpuInfoEntity spuInfoEntity = new SpuInfoEntity();
+            spuInfoEntity.setId(spuId);
+            spuInfoEntity.setPublishStatus(1);
+            spuInfoEntity.setUpdateTime(new Date());
+            this.updateById(spuInfoEntity);
+        }
     }
 }

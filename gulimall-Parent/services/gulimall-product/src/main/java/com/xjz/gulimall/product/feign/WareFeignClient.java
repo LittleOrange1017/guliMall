@@ -9,7 +9,7 @@ import vo.SkuHasStockVo;
 import java.util.List;
 
 @FeignClient("service-ware")
-public interface WareFeginClient {
+public interface WareFeignClient {
     @PostMapping("/ware/waresku/skuStock")
     List<SkuHasStockVo> getSkuStockBySpuId(@RequestBody SkuStockTo skuStockTo);
 }

@@ -88,7 +88,7 @@ public class WareSkuController {
      * @param skuStockTo
      * @return
      */
-    @PostMapping("/ware/waresku/skuStock")
+    @PostMapping("/skuStock")
     public List<SkuHasStockVo> getSkuStockBySpuId(@RequestBody SkuStockTo skuStockTo){
         return wareSkuService.getSkuStockBySpuId(skuStockTo);
     }

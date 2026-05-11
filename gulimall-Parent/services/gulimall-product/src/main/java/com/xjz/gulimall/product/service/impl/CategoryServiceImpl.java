@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xjz.gulimall.product.service.CategoryBrandRelationService;
+import com.xjz.gulimall.product.vo.Catelog2Vo;
 import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.util.Arrays;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import utils.Query;
@@ -115,6 +117,52 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         findParentPath(catelogId,catelogIds);
         Collections.reverse(catelogIds);
         return catelogIds.toArray(new Long[0]);
+    }
+
+    @Override
+    public List<CategoryEntity> getLevel1Categorys() {
+        QueryWrapper<CategoryEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("cat_level",1);
+        return baseMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public Map<String, List<Catelog2Vo>> getCatelogJson() {
+        List<CategoryEntity> categoryEntities = this.listWithTree();
+        Map<String, List<Catelog2Vo>> map = new HashMap<>();
+        for(CategoryEntity level1:categoryEntities)
+        {
+            String catelog1Id = level1.getCatId().toString();
+            List<Catelog2Vo> catelog2Vos=new ArrayList<>();
+            List<CategoryEntity> level2Entites = level1.getChildren();
+            if(level2Entites!=null&&!level2Entites.isEmpty())
+            {
+                for(CategoryEntity level2:level2Entites)
+                {
+                    Catelog2Vo catelog2Vo=new Catelog2Vo();
+                    catelog2Vo.setCatelog1Id(catelog1Id);
+                    catelog2Vo.setId(level2.getCatId().toString());
+                    catelog2Vo.setName(level2.getName());
+                    List<Catelog2Vo.Catelog3Vo> catelog3Vos=new ArrayList<>();
+                    List<CategoryEntity> level3Entites = level2.getChildren();
+                    if(level3Entites!=null&&!level3Entites.isEmpty())
+                    {
+                        for(CategoryEntity level3:level3Entites)
+                        {
+                            Catelog2Vo.Catelog3Vo catelog3Vo=new Catelog2Vo.Catelog3Vo();
+                            catelog3Vo.setCatelog2Id(catelog2Vo.getId());
+                            catelog3Vo.setName(level3.getName());
+                            catelog3Vo.setId(level3.getCatId().toString());
+                            catelog3Vos.add(catelog3Vo);
+                        }
+                    }
+                    catelog2Vo.setCatelog3VoList(catelog3Vos);
+                    catelog2Vos.add(catelog2Vo);
+                }
+            }
+            map.put(catelog1Id,catelog2Vos);
+        }
+        return map;
     }
 
     private void findParentPath(Long catelogId, List<Long> catelogIds) {

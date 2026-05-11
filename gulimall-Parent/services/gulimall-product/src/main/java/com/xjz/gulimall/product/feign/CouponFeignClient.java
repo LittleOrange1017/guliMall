@@ -20,7 +20,7 @@ import java.math.BigDecimal;
  * @Version 1.0
  */
 @FeignClient("service-coupon")
-public interface CouponFeginClient {
+public interface CouponFeignClient {
     /**
      * 调用service-coupon的接口保存积分信息
      */
