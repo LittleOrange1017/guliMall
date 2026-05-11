@@ -1,5 +1,8 @@
 package com.xjz.gulimall.product.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -10,8 +13,11 @@ import com.xjz.gulimall.product.service.CategoryBrandRelationService;
 import com.xjz.gulimall.product.vo.Catelog2Vo;
 import org.apache.commons.lang.StringUtils;
 import org.bouncycastle.util.Arrays;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.units.qual.C;
+import org.json.JSONString;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import utils.Query;
 import com.xjz.gulimall.product.dao.CategoryDao;
@@ -32,7 +38,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     private CategoryDao categoryDao;
     @Autowired
     private CategoryBrandRelationService categoryBrandRelationService;
-
+    @Autowired
+    private StringRedisTemplate redisTemplate;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<CategoryEntity> page = this.page(
@@ -128,6 +135,26 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     @Override
     public Map<String, List<Catelog2Vo>> getCatelogJson() {
+        String catalogJSONKey = "catalogJSON";
+        String catelogJSON = redisTemplate.opsForValue().get(catalogJSONKey);
+        if(StringUtils.isEmpty(catelogJSON))
+        {
+            Map<String, List<Catelog2Vo>> stringListMap = getStringListMap();
+            String json = JSON.toJSONString(stringListMap);
+            redisTemplate.opsForValue().set(catalogJSONKey,json);
+            return stringListMap;
+        }
+        else
+        {
+            Map<String, List<Catelog2Vo>> result = JSON.parseObject(
+                    catelogJSON,
+                    new TypeReference<Map<String, List<Catelog2Vo>>>() {}
+            );
+            return result;
+        }
+    }
+
+    private @NonNull Map<String, List<Catelog2Vo>> getStringListMap() {
         List<CategoryEntity> categoryEntities = this.listWithTree();
         Map<String, List<Catelog2Vo>> map = new HashMap<>();
         for(CategoryEntity level1:categoryEntities)
