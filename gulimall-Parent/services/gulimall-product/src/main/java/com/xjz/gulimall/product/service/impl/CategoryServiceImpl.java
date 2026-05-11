@@ -141,6 +141,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         if(StringUtils.isEmpty(catelogJSON))
         {
             Map<String, List<Catelog2Vo>> stringListMap = getStringListMap();
+            if(stringListMap==null||stringListMap.isEmpty())
+            {
+                redisTemplate.opsForValue().set(catalogJSONKey,"empty",5,TimeUnit.SECONDS);
+                return new HashMap<>();
+            }
             String json = JSON.toJSONString(stringListMap);
             redisTemplate.opsForValue().set(catalogJSONKey,json,500, TimeUnit.SECONDS);
             return stringListMap;
