@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -141,7 +142,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         {
             Map<String, List<Catelog2Vo>> stringListMap = getStringListMap();
             String json = JSON.toJSONString(stringListMap);
-            redisTemplate.opsForValue().set(catalogJSONKey,json);
+            redisTemplate.opsForValue().set(catalogJSONKey,json,500, TimeUnit.SECONDS);
             return stringListMap;
         }
         else
