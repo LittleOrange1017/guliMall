@@ -152,7 +152,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     private Map<String, List<Catelog2Vo>> getPlus() {
         String catalogJSONKey="catalogJSON";
-        String uuid = String.valueOf(Thread.currentThread().getId());
+        String uuid = UUID.randomUUID().toString();
         Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock", uuid, 30, TimeUnit.SECONDS);
         if (lock) {
             try {
