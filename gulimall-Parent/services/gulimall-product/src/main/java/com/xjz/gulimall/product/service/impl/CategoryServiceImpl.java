@@ -17,6 +17,8 @@ import org.apache.tomcat.jni.Time;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.units.qual.C;
 import org.json.JSONString;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -43,6 +45,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     private CategoryBrandRelationService categoryBrandRelationService;
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private RedissonClient redisson;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -118,6 +122,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         if (!StringUtils.isEmpty(category.getName())) {
             categoryBrandRelationService.updateCategoryName(category.getCatId(), category.getName());
         }
+        String catelogJSONKey="catelogJSON";
+        redisTemplate.delete(catelogJSONKey);
         return categoryDao.update(category, updateWrapper);
     }
 
@@ -139,52 +145,58 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     @Override
     public Map<String, List<Catelog2Vo>> getCatelogJson() throws InterruptedException {
-        String catalogJSONKey = "catalogJSON";
-        String catelogJSON = redisTemplate.opsForValue().get(catalogJSONKey);
+        String catelogJSONKey = "catelogJSON";
+        String catelogJSON = redisTemplate.opsForValue().get(catelogJSONKey);
         if (!StringUtils.isEmpty(catelogJSON)) {
+            if(catelogJSON.equals("empty"))
+            {
+                return new HashMap<>();
+            }
             Map<String, List<Catelog2Vo>> stringListMap = JSONObject.parseObject(catelogJSON, new TypeReference<Map<String, List<Catelog2Vo>>>() {
             });
             return stringListMap;
         } else {
-            return getPlus();
+            return getCatelogjsonFromRedisson();
         }
     }
 
-    private Map<String, List<Catelog2Vo>> getPlus() {
-        String catalogJSONKey="catalogJSON";
-        String uuid = UUID.randomUUID().toString();
-        Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock", uuid, 30, TimeUnit.SECONDS);
-        if (lock) {
-            try {
-                String catelogJSON = redisTemplate.opsForValue().get(catalogJSONKey);
-                if (!StringUtils.isEmpty(catelogJSON)) {
-                    if (catelogJSON.equals("empty")) {
-                        return new HashMap<>();
-                    } else {
-                        Map<String, List<Catelog2Vo>> stringListMap = JSONObject.parseObject(catelogJSON, new TypeReference<Map<String, List<Catelog2Vo>>>() {
-                        });
-                        return stringListMap;
-                    }
-                } else {
-                    Map<String, List<Catelog2Vo>> map = getMap();
-                    if (map == null || map.isEmpty()) {
-                        redisTemplate.opsForValue().set(catalogJSONKey, "empty", 5, TimeUnit.SECONDS);
-                    } else {
-                        String json = JSON.toJSONString(map);
-                        long timeout = 500 + new Random().nextInt(30);
-                        redisTemplate.opsForValue().set(catalogJSONKey, json, timeout, TimeUnit.SECONDS);
-                    }
-                    return map;
+    private Map<String, List<Catelog2Vo>> getCatelogjsonFromRedisson() {
+        String catelogJSONKey="catelogJSON";
+        RLock lock = redisson.getLock("catelogJson-lock");
+        lock.lock(30,TimeUnit.SECONDS);
+        try {
+            String catelogJSON = redisTemplate.opsForValue().get(catelogJSONKey);
+            if(!StringUtils.isEmpty(catelogJSON))
+            {
+                if("empty".equals(catelogJSON))
+                {
+                    return new HashMap<>();
                 }
+                Map<String, List<Catelog2Vo>> stringListMap = JSONObject.parseObject(catelogJSON, new TypeReference<Map<String, List<Catelog2Vo>>>() {
+                });
+                return stringListMap;
             }
-            finally {
-                String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
-                redisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Arrays.asList("lock"), uuid);
+            else
+            {
+                Map<String, List<Catelog2Vo>> stringListMap = getMap();
+                if(stringListMap==null||stringListMap.isEmpty())
+                {
+                    redisTemplate.opsForValue().set(catelogJSONKey,"empty",5,TimeUnit.SECONDS);
+                }
+                else
+                {
+                    String jsonString = JSON.toJSONString(stringListMap);
+                    long timeout=500+new Random().nextInt(30);
+                    redisTemplate.opsForValue().set(catelogJSONKey,jsonString,timeout,TimeUnit.SECONDS);
+                }
+                return stringListMap;
             }
         }
-        else
-        {
-            return getPlus();
+        finally {
+            if(lock.isLocked()&&lock.isHeldByCurrentThread())
+            {
+                lock.unlock();
+            }
         }
     }
 
