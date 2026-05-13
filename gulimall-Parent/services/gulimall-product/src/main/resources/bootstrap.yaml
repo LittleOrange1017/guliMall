@@ -1,4 +1,10 @@
 spring:
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30000
+      key-prefix: CACHE_
+      use-key-prefix: false
   application:
     name: service-product
   profiles:

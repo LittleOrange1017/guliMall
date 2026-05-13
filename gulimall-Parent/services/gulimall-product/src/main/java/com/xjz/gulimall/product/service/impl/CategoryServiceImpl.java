@@ -20,6 +20,9 @@ import org.json.JSONString;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,14 +119,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = {"category"},key = "'getLevel1Categorys'")
+    })
     public int updateCategoryById(CategoryEntity category) {
         UpdateWrapper<CategoryEntity> updateWrapper = new UpdateWrapper<CategoryEntity>();
         updateWrapper.eq("cat_id", category.getCatId());
         if (!StringUtils.isEmpty(category.getName())) {
             categoryBrandRelationService.updateCategoryName(category.getCatId(), category.getName());
         }
-        String catelogJSONKey="catelogJSON";
-        redisTemplate.delete(catelogJSONKey);
         return categoryDao.update(category, updateWrapper);
     }
 
@@ -137,6 +141,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     }
 
     @Override
+    @Cacheable(cacheNames = {"category"},key = "#root.method.name")
     public List<CategoryEntity> getLevel1Categorys() {
         QueryWrapper<CategoryEntity> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("cat_level", 1);
