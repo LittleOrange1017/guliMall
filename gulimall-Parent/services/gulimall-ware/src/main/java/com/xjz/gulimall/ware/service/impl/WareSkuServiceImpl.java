@@ -23,7 +23,6 @@ import com.xjz.gulimall.ware.entity.WareSkuEntity;
 import com.xjz.gulimall.ware.service.WareSkuService;
 import vo.SkuHasStockVo;
 
-import javax.rmi.CORBA.Stub;
 
 
 @Service("wareSkuService")
@@ -58,15 +57,18 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
 
     @Override
     public List<SkuHasStockVo> getSkuStockBySpuId(SkuStockTo skuStockTo) {
-        List<Long> skuId = skuStockTo.getSkuId();
-        List<WareSkuEntity> wareSkuEntities = this.listByIds(skuId);
+        List<Long> skuIdList = skuStockTo.getSkuId();
+        // 使用 sku_id 字段查询，而不是主键 id
+        List<WareSkuEntity> wareSkuEntities = this.list(
+                new QueryWrapper<WareSkuEntity>().in("sku_id", skuIdList)
+        );
         return wareSkuEntities.stream().map(new Function<WareSkuEntity, SkuHasStockVo>() {
             @Override
             public SkuHasStockVo apply(WareSkuEntity wareSkuEntity) {
                 SkuHasStockVo skuHasStockVo = new SkuHasStockVo();
-                Long skuId1 = wareSkuEntity.getSkuId();
+                Long skuId = wareSkuEntity.getSkuId();
                 Boolean hasStock = wareSkuEntity.getStock() > 0;
-                skuHasStockVo.setSkuId(skuId1);
+                skuHasStockVo.setSkuId(skuId);
                 skuHasStockVo.setHasStock(hasStock);
                 return skuHasStockVo;
             }

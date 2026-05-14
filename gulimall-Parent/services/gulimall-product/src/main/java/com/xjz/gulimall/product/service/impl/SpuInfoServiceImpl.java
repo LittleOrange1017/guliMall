@@ -10,6 +10,7 @@ import com.xjz.gulimall.product.feign.CouponFeignClient;
 import com.xjz.gulimall.product.feign.SearchFeignClient;
 import com.xjz.gulimall.product.feign.WareFeignClient;
 import com.xjz.gulimall.product.service.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service("spuInfoService")
 @Transactional
+@Slf4j
 public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> implements SpuInfoService {
     @Autowired
     private SpuInfoDescService spuInfoDescService;
@@ -238,11 +240,13 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             SkuStockTo skuStockTo = new SkuStockTo();
             skuStockTo.setSkuId(skuIdList);
             List<SkuHasStockVo> hasStockList = wareFeignClient.getSkuStockBySpuId(skuStockTo);
+            log.info("库存服务返回的数据：{}", hasStockList);
             // 核心魔法：将 List 转化为 Map<skuId, hasStock>
             if (hasStockList != null) {
                 stockMap = hasStockList.stream().collect(
                         Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock)
                 );
+                log.info("转换后的 stockMap：{}", stockMap);
             }
         } catch (Exception e) {
             log.error("库存服务调用异常：原因 {}", e);
@@ -253,6 +257,7 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         BrandEntity brand = brandService.getById(skuInfoEntities.get(0).getBrandId());
         CategoryEntity category = categoryService.getById(skuInfoEntities.get(0).getCatalogId());
         //TODO 7、正式组装 ES 数据模型
+        log.info("最终的 stockMap：{}", stockMap);
         Map<Long, Boolean> finalStockMap = stockMap;
         List<SkuEsModel> skuEsModels = skuInfoEntities.stream().map(new Function<SkuInfoEntity, SkuEsModel>() {
             @Override
@@ -267,7 +272,10 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                 skuEsModel.setCatalogName(category.getName());
                 // 挂载循环外组装好的检索属性
                 skuEsModel.setAttrs(attrsList);
-                skuEsModel.setHasStock(finalStockMap.get(skuEsModel.getSkuId()));
+                // 如果库存查询失败或没有该 skuId 的库存信息，默认认为有库存
+                Boolean hasStockValue = finalStockMap == null ? true : finalStockMap.getOrDefault(skuEsModel.getSkuId(), true);
+                log.info("skuId: {}, hasStock: {}", skuEsModel.getSkuId(), hasStockValue);
+                skuEsModel.setHasStock(hasStockValue);
                 return skuEsModel;
             }
         }).collect(Collectors.toList());
