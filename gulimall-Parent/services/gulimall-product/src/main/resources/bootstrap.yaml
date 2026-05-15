@@ -30,9 +30,9 @@ spring:
         server-addr: 127.0.0.1:8848
         namespace: dev-namespace-uuid
   thymeleaf:
-    cache: true
+    cache: false
 server:
   port: 10000
 logging:
   level:
-    com.xjz.gulimall: error
+    com.xjz.gulimall: info

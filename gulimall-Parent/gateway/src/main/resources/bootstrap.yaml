@@ -45,10 +45,14 @@ spring:
             - Path=/api/**
           filters:
             - RewritePath=/api/(?<segment>.*), /renren-fast/$\{segment}
+        - id: Search_host_route
+          uri: lb://service-search
+          predicates:
+            - Host=search.littleorange.com
         - id: littleOrange_host_route
           # lb:// 代表使用负载均衡，找 Nacos 中名为 gulimall-product 的服务
           uri: lb://service-product
           predicates:
             # 【关键魔法】：如果请求头中的 Host 头是 littleOrange.com，就匹配这个路由！
             # 这就是为什么上面 Nginx 配置里必须要有 proxy_set_header Host $host 的原因
-            - Host=**.littleOrange.com
+            - Host=littleorange.com
