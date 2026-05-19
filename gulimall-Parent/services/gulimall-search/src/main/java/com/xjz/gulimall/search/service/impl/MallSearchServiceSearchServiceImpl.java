@@ -5,6 +5,7 @@ import com.xjz.gulimall.search.constant.EsConstant;
 import com.xjz.gulimall.search.dto.SearchParam;
 import com.xjz.gulimall.search.service.MallSearchService;
 import com.xjz.gulimall.search.vo.SearchResult;
+import org.apache.catalina.util.URLEncoder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
@@ -40,6 +41,7 @@ import org.springframework.stereotype.Service;
 import to.SkuEsModel;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -235,12 +237,23 @@ public class MallSearchServiceSearchServiceImpl implements MallSearchService {
         searchResult.setBrands(brandVOS);
         //解析属性聚合
         //因为在构建时最外层套了个 nested，所以第一步先用 ParsedNested 接住！
+        // 获取所有已经选中的属性 ID 列表 ...
+        List<Long> attrIds = new ArrayList<>();
+        if(searchParam.getAttrs() != null){
+            attrIds = searchParam.getAttrs().stream().map(attr -> {
+                return Long.parseLong(attr.split("_")[0]);
+            }).collect(Collectors.toList());
+        }
         ParsedNested attrAgg = aggregations.get("attr_agg");
         ParsedLongTerms  attrIdAgg = attrAgg.getAggregations().get("attrId_agg");
         List<SearchResult.AttrVO> attrVOS=new ArrayList<>();
         for (Terms.Bucket bucket : attrIdAgg.getBuckets()) {
             SearchResult.AttrVO attrVO=new SearchResult.AttrVO();
             long attrId = bucket.getKeyAsNumber().longValue();
+            if(attrIds.contains(attrId))
+            {
+                continue;
+            }
             attrVO.setAttrId(attrId);
             ParsedStringTerms attrNameAgg = bucket.getAggregations().get("attrName_agg");
             String attrName = attrNameAgg.getBuckets().get(0).getKeyAsString();
@@ -255,6 +268,24 @@ public class MallSearchServiceSearchServiceImpl implements MallSearchService {
             attrVOS.add(attrVO);
         }
         searchResult.setAttrs(attrVOS);
+        if(searchParam.getAttrs()!=null&&!searchParam.getAttrs().isEmpty())
+        {
+            List<SearchResult.NavVo> collect = searchParam.getAttrs().stream().map(new Function<String, SearchResult.NavVo>() {
+                @Override
+                public SearchResult.NavVo apply(String attr) {
+                    SearchResult.NavVo navVo = new SearchResult.NavVo();
+                    String[] split = attr.split("_");
+                    navVo.setNavValue(split[1]);
+                    navVo.setNavName("属性");
+                    String oldQueryString = searchParam.getOldQueryString();
+                    String encode= URLEncoder.DEFAULT.encode(attr,StandardCharsets.UTF_8);
+                    String replace = oldQueryString.replace("&attrs=" + encode, "");
+                    navVo.setLink("http://search.littleorange.com/list.html?" + replace);
+                    return navVo;
+                }
+            }).collect(Collectors.toList());
+            searchResult.setNavs(collect);
+        }
         return searchResult;
     }
 }

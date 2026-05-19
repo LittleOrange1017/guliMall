@@ -23,4 +23,5 @@ public class SearchParam {
     private List<Long> brandId;
     private List<String> attrs;
     private Integer pageNum;//页码
+    private String  oldQueryString;
 }

@@ -24,8 +24,9 @@ public class SearchController {
         if(searchParam.getPageNum() == null){
             searchParam.setPageNum(1);
         }
-        SearchResult result=mallSearchService.search(searchParam);
         String queryString = httpServletRequest.getQueryString();
+        searchParam.setOldQueryString(queryString);
+        SearchResult result=mallSearchService.search(searchParam);
         if(queryString!=null&&queryString.startsWith("&"))
         {
             queryString=queryString.substring(1);

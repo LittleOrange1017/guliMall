@@ -15,6 +15,7 @@ public class SearchResult {
     private List<BrandVO> brands;//当前所查询到的结果所涉及到的所有品牌
     private List<AttrVO> attrs;//当前所查询到的结果所涉及到的所有属性
     private List<CatalogVO> catalogs;//当前所查询到的结果所涉及到的所有分类
+    private List<NavVo> navs;
     @Data
     public static class BrandVO{
         private Long brandId;
@@ -31,5 +32,11 @@ public class SearchResult {
         private Long attrId;
         private String attrName;
         private List<String> attrValue;
+    }
+    @Data
+    public static class NavVo{
+        private String navName;
+        private String navValue;
+        private String link;
     }
 }
