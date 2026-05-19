@@ -11,19 +11,27 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Controller
 @Slf4j
 public class SearchController {
     @Autowired
     private MallSearchService mallSearchService;
     @GetMapping("/list.html")
-    public String list(SearchParam searchParam, Model model){
+    public String list(SearchParam searchParam, Model model, HttpServletRequest httpServletRequest){
         // 设置默认页码
         if(searchParam.getPageNum() == null){
             searchParam.setPageNum(1);
         }
         SearchResult result=mallSearchService.search(searchParam);
+        String queryString = httpServletRequest.getQueryString();
+        if(queryString!=null&&queryString.startsWith("&"))
+        {
+            queryString=queryString.substring(1);
+        }
         model.addAttribute("result",result);
+        model.addAttribute("queryString",queryString);
         return "list";
     }
 }

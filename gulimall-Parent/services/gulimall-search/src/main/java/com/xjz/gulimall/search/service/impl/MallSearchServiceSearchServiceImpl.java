@@ -41,6 +41,7 @@ import to.SkuEsModel;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -104,6 +105,7 @@ public class MallSearchServiceSearchServiceImpl implements MallSearchService {
             else {
                 rangeQuery.gte(split[0]).lte(split[1]);
             }
+            booledQuery.filter(rangeQuery);
         }
         if(searchParam.getAttrs()!=null&&!searchParam.getAttrs().isEmpty())
         {
@@ -246,6 +248,8 @@ public class MallSearchServiceSearchServiceImpl implements MallSearchService {
             ParsedStringTerms attrValueAgg = bucket.getAggregations().get("attrValue_agg");
             List<String> attrVales = attrValueAgg.getBuckets().stream()
                     .map(Terms.Bucket::getKeyAsString)
+                    .flatMap(str-> Arrays.stream(str.split(";")))
+                    .distinct()
                     .collect(Collectors.toList());
             attrVO.setAttrValue(attrVales);
             attrVOS.add(attrVO);

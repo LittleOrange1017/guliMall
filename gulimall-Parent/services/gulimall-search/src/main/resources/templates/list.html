@@ -403,8 +403,8 @@
         <a href="http://littleorange.com"><img src="/static/search/./image/logo1.jpg" alt=""></a>
     </div>
     <div class="header_form">
-        <input type="text" placeholder="手机" />
-        <a href="/static/search/#">搜索</a>
+        <input id="keywordInput" type="text" placeholder="手机" th:value="${param.keyword}" />
+        <a id="searchBtn" href="javascript:void(0)">搜索</a>
     </div>
     <div class="header_ico">
         <div class="header_gw">
@@ -786,7 +786,7 @@
                         <div class="sl_value_logo">
                             <ul>
                                 <li th:each="brand:${result.getBrands()}">
-                                    <a href="/static/search/#">
+                                    <a th:href="|/list.html?${queryString != null ? queryString : ''}&brandId=${brand.brandId}|">
                                         <img th:src="${brand.getBrandImg()}" alt="">
                                         <div th:text="${brand.getBrandName()}">
                                             华为(HUAWEI)
@@ -816,7 +816,7 @@
                     </div>
                     <div class="sl_value">
                             <ul>
-                                <li th:each="catelog:${result.getCatalogs()}"><a href="/static/search/#" th:text="${catelog.getCatalogName()}">0-安卓（Android）</a></li>
+                                <li th:each="catelog:${result.getCatalogs()}"><a th:href="|/list.html?${queryString!=null ? queryString:''}&catelog3Id=${catelog.getCatalogId()}|" th:text="${catelog.getCatalogName()}">0-安卓（Android）</a></li>
                             </ul>
                     </div>
                     <div class="sl_ext">
@@ -832,14 +832,35 @@
                         </a>
                     </div>
                 </div>
-                <!--系统-->
+                <!--规格参数属性-->
                 <div class="JD_pre" th:each="attr:${result.getAttrs()}">
                     <div class="sl_key">
                         <span th:text="${attr.getAttrName()}">系统：</span>
                     </div>
                     <div class="sl_value">
                         <ul>
-                            <li th:each="attrValue:${attr.getAttrValue()}"><a href="/static/search/#" th:text="${attrValue}">0-安卓（Android）</a></li>
+                            <li th:each="attrValue:${attr.getAttrValue()}"> <a th:href="|/list.html?${queryString != null ? queryString : ''}&attrs=${attr.attrId}_${attrValue}|"  th:text="${attrValue}">0-安卓（Android）</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <!--价格-->
+                <div class="JD_pre">
+                    <div class="sl_key">
+                        <span>价格：</span>
+                    </div>
+                    <div class="sl_value">
+                        <ul>
+                            <!-- 那些写死的 0-499 <li> 可以删掉，让页面更清爽。直接保留输入框功能 -->
+                            <li class="sl_value_li">
+                                <!-- 赋上 ID：skuPriceFrom -->
+                                <input type="number" id="skuPriceFrom" placeholder="¥">
+                                <p>-</p>
+                                <!-- 赋上 ID：skuPriceTo -->
+                                <input type="number" id="skuPriceTo" placeholder="¥">
+
+                                <!-- 赋上 ID，并禁用默认 href 跳转 -->
+                                <a href="javascript:void(0)" id="skuPriceSearchBtn">确定</a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -847,7 +868,7 @@
             <div class="JD_show">
                 <a href="/static/search/#">
                     <span>
-                        更多选项（ CPU核数、网络、机身颜色 等）
+                        更多规格参数筛选选项
                     </span>
                 </a>
             </div>
@@ -1019,16 +1040,27 @@
                 <div class="filter">
                     <!--综合排序-->
                     <div class="filter_top">
-                        <div class="filter_top_left">
-                            <a href="/static/search/#">综合排序</a>
-                            <a href="/static/search/#">销量</a>
-                            <a href="/static/search/#">价格</a>
-                            <a href="/static/search/#">评论分</a>
-                            <a href="/static/search/#">上架时间</a>
+                        <div class="filter_top_left" th:with="currentSort=${param.sort!=null?param.sort[0]:''}">
+                            <a th:style="${currentSort == '' || #strings.startsWith(currentSort, 'hotScore') ? 'color:#fff;background:#e2231a;' : 'color:#333;background:#fff;'}"
+                               href="javascript:void(0)"
+                               onclick="sortSearch('hotScore')">
+                                综合排序
+                                <!-- 也可以给综合排序加上上下箭头，体验更好 -->
+                                <span th:if="${currentSort == 'hotScore_desc'}">↓</span>
+                                <span th:if="${currentSort == 'hotScore_asc'}">↑</span>
+                            </a>
+                            <a th:style="${#strings.startsWith(currentSort,'saleCount')?'color:#fff;background:#e2231a;' : ''}" href="javascript:void(0)" onclick="sortSearch('saleCount')">销量
+                                <span th:if="${currentSort == 'saleCount_desc'}">↓</span>
+                                <span th:if="${currentSort == 'saleCount_asc'}">↑</span>
+                            </a>
+                            <a th:style="${#strings.startsWith(currentSort,'skuPrice')?'color:#fff;background:#e2231a;' : ''}" href="javascript:void(0)" onclick="sortSearch('skuPrice')">价格
+                                <span th:if="${currentSort == 'skuPrice_desc'}">↓</span>
+                                <span th:if="${currentSort == 'skuPrice_asc'}">↑</span>
+                            </a>
                         </div>
                         <div class="filter_top_right">
                             <span class="fp-text">
-                               <b>1</b><em>/</em><i>169</i>
+                               <b>1</b><em>/</em><i th:text="${result.pageNum}">169</i>
                            </span>
                             <a href="/static/search/#" class="prev"><</a>
                             <a href="/static/search/#" class="next"> > </a>
@@ -1195,23 +1227,20 @@
                     <div class="filter_page">
                         <div class="page_wrap">
                             <span class="page_span1">
-                                <a href="/static/search/#">
+                                <a th:if="${result.pageNum>1}"
+                                  th:onclick="|searchByPage(${result.pageNum-1})|" href="javascript:void(0)">
                                     < 上一页
                                 </a>
-                                <a href="/static/search/#" style="border: 0;color:#ee2222;background: #fff">1</a>
-                                <a href="/static/search/#">2</a>
-                                <a href="/static/search/#">3</a>
-                                <a href="/static/search/#" style="border: 0;font-size: 20px;color: #999;background: #fff">...</a>
-                                <a href="/static/search/#">169</a>
-                                <a href="/static/search/#">
+                                <a th:each="page:${result.getTotalPages()}" th:text="${page}" th:onclick="|searchByPage(${page})|" href="javascript:void(0)" th:style="${page==result.pageNum?'border: 0;color:#ee2222;background:#fff':''}">1</a>
+                                <a th:if="${result.pageNum<result.getTotalPages()}" th:onclick="|searchByPage(${result.pageNum+1})|" href="javascript:void(0)">
                                     下一页 >
                                 </a>
                             </span>
                             <span class="page_span2">
-                                <em>共<b>169</b>页&nbsp;&nbsp;到第</em>
-                                <input type="number" value="1">
+                                <em>共<b th:text="${result.getTotalPages()}">169</b>页&nbsp;&nbsp;&nbsp;到第</em>
+                                <input type="number" th:value="${result.pageNum}" id="jumpPageInput">
                                 <em>页</em>
-                                <a href="/static/search/#">确定</a>
+                                <a href="javascript:void(0)" id="jumpPageBtn">确定</a>
                             </span>
                         </div>
                     </div>
@@ -1955,6 +1984,75 @@
     },function(){
         $(this).css("color","#727272")
     })
+    $("#searchBtn").click(function() {
+        // 获取用户输入的关键字
+        var keyword = $("#keywordInput").val();
+        if(keyword.trim() == "") {
+            keyword = $("#keywordInput").attr("placeholder")
+        }
+        // 发起 GET 请求跳转（重新加载页面）
+        // 这就相当于用户在地址栏手动输入了 http://search.gulimall.com/list.html?keyword=xxx
+        location.href = "/list.html?keyword=" + keyword;
+    });
+
+    /**
+     *  封装一个通用的分页跳转函数
+     * @param pageNum
+     */
+    function searchByPage(pageNum)
+    {
+        var searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("pageNum", pageNum);
+        location.href = "/list.html?" + searchParams.toString();
+    }
+    $("#jumpPageBtn").click(function() {
+        // 拿到用户在输入框里输入的页码
+        var jumpPage = $("#jumpPageInput").val();
+
+        // 简单防御性编程：防止乱输
+        if(jumpPage != null && jumpPage.trim() !== "") {
+            searchByPage(jumpPage);
+        }
+    });
+    function sortSearch(sortField)
+    {
+        var searchParams=new URLSearchParams(window.location.search);
+        var currentSort=searchParams.get("sort");
+        var sortRule="desc";
+        if (currentSort != null && currentSort.startsWith(sortField)) {
+            // 如果当前是降序，就翻转为升序；否则保持降序
+            if (currentSort.endsWith("desc")) {
+                sortRule = "asc";
+            } else {
+                sortRule = "desc";
+            }
+        }
+        searchParams.set("sort", sortField + "_" + sortRule);
+        searchParams.set("pageNum", 1);
+        location.href = "/list.html?" + searchParams.toString();
+    }
+    $("#skuPriceSearchBtn").click(function (){
+        var min=$("#skuPriceFrom").val();
+        var max=$("#skuPriceTo").val();
+        if (min.trim() === "" && max.trim() === "") {
+            return;
+        }
+        var priceStr = "";
+        if (min.trim() !== "" && max.trim() !== "") {
+            // 区间： min_max
+            priceStr = min + "-" + max;
+        } else if (min.trim() !== "" && max.trim() === "") {
+            // 只有最低价： min_
+            priceStr = min + "-";
+        } else if (min.trim() === "" && max.trim() !== "") {
+            // 只有最高价： _max
+            priceStr = "-" + max;
+        }
+        var searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("pageNum",1);
+        searchParams.set("skuPrice", priceStr);
+        location.href = "/list.html?" + searchParams.toString();
+    });
 </script>
 </body>
 </html>

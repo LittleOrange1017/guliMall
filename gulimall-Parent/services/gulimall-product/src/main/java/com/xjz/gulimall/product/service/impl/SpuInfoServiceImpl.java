@@ -29,7 +29,9 @@ import vo.SkuHasStockVo;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service("spuInfoService")
@@ -226,13 +228,33 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         List<Long> searchAttrIds = attrService.selectSearchAttrIds(attrIds);
         //TODO 5、组装最终需要放入 ES 的属性集合
         Set<Long> idSet = new HashSet<>(searchAttrIds);
-        List<SkuEsModel.Attrs> attrsList = baseAttrs.stream().filter(productAttrValueEntity -> idSet.contains(productAttrValueEntity.getAttrId()))
-                .map(productAttrValueEntity -> {
-                    SkuEsModel.Attrs attrs = new SkuEsModel.Attrs();
-                    attrs.setAttrId(productAttrValueEntity.getAttrId());
-                    attrs.setAttrValue(productAttrValueEntity.getAttrValue());
-                    attrs.setAttrName(productAttrValueEntity.getAttrName());
-                    return attrs;
+        List<SkuEsModel.Attrs> attrsList = baseAttrs.stream()
+                // 1. 过滤出允许被检索的属性
+                .filter(productAttrValueEntity -> idSet.contains(productAttrValueEntity.getAttrId()))
+                // 2. ★ 核心改变：从 map 变成 flatMap，实现裂变！
+                .flatMap(productAttrValueEntity -> {
+
+                    // 拿到原始的值（可能包含分号，如 "黑色;白色;薰衣草紫色"）
+                    String rawValue = productAttrValueEntity.getAttrValue();
+
+                    // 如果为空，直接返回空流，防止空指针
+                    if (StringUtils.isEmpty(rawValue)) {
+                        return Stream.empty();
+                    }
+
+                    // 按照分号切成数组: ["黑色", "白色", "薰衣草紫色"]
+                    String[] values = rawValue.split(";");
+
+                    // 将切开的每一个单值，都包装成一个独立的 SkuEsModel.Attrs 对象
+                    return Arrays.stream(values).map(val -> {
+                        SkuEsModel.Attrs attrs = new SkuEsModel.Attrs();
+                        attrs.setAttrId(productAttrValueEntity.getAttrId());
+                        attrs.setAttrName(productAttrValueEntity.getAttrName());
+                        // ★ 注意这里：存入的是纯粹干净的单值！
+                        attrs.setAttrValue(val);
+                        return attrs;
+                    });
+
                 }).collect(Collectors.toList());
         //TODO 6、发送库存系统远程调用，批量查询对应的SkuId的库存是否有无
         Map<Long, Boolean> stockMap = null;
