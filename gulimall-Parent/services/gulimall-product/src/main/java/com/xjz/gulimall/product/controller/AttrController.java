@@ -10,6 +10,8 @@ import utils.PageUtils;
 import utils.R;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -85,6 +87,16 @@ public class AttrController {
 		attrService.removeByIds(Arrays.asList(attrIds));
 
         return R.ok();
+    }
+    @PostMapping("/getAttrName")
+    Map<Long, String> getAttrNamesByIds(@RequestBody List<Long> attrIds)
+    {
+        List<AttrEntity> attrEntities = attrService.listByIds(attrIds);
+        HashMap<Long,String> map=new HashMap<>();
+        for (AttrEntity attrEntity : attrEntities) {
+            map.put(attrEntity.getAttrId(),attrEntity.getAttrName());
+        }
+        return map;
     }
 
 }

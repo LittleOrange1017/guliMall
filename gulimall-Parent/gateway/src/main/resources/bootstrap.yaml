@@ -55,4 +55,4 @@ spring:
           predicates:
             # 【关键魔法】：如果请求头中的 Host 头是 littleOrange.com，就匹配这个路由！
             # 这就是为什么上面 Nginx 配置里必须要有 proxy_set_header Host $host 的原因
-            - Host=littleorange.com
+            - Host=littleorange.com,item.littleorange.com

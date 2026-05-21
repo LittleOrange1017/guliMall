@@ -3,11 +3,13 @@ package com.xjz.gulimall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xjz.gulimall.product.entity.*;
+import com.xjz.gulimall.product.service.*;
+import com.xjz.gulimall.product.vo.SkuItemVo;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SkuInfoDao;
-import com.xjz.gulimall.product.entity.SkuInfoEntity;
-import com.xjz.gulimall.product.service.SkuInfoService;
 import org.springframework.stereotype.Service;
 import utils.PageUtils;
 
@@ -16,11 +18,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service("skuInfoService")
 public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> implements SkuInfoService {
-
+    @Autowired
+    private SkuImagesService service;
+    @Autowired
+    private SpuInfoDescService spuInfoDescService;
+    @Autowired
+    private SkuImagesService skuImagesService;
+    @Autowired
+    private SpuInfoService spuInfoService;
+    @Autowired
+    private ProductAttrValueService productAttrValueService;
+    @Autowired
+    private AttrAttrgroupRelationService attrAttrgroupRelationService;
+    @Autowired
+    private AttrGroupService attrGroupService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         QueryWrapper<SkuInfoEntity> queryWrapper=new QueryWrapper<>();
@@ -82,6 +99,28 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
         QueryWrapper<SkuInfoEntity> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq("spu_id",spuId);
         return list(queryWrapper);
+    }
+
+    @Override
+    public SkuItemVo getItem(Long skuId) {
+        SkuItemVo skuItemVo=new SkuItemVo();
+        //sku基本信息
+        SkuInfoEntity skuInfo = this.getSkuInfo(skuId);
+        skuItemVo.setInfo(skuInfo);
+        //sku图片信息
+        List<SkuImagesEntity> imagesEntityList = skuImagesService.list(new QueryWrapper<SkuImagesEntity>().eq("sku_id", skuId));
+        skuItemVo.setImages(imagesEntityList);
+        //spu销售属性组合
+
+        //spu介绍
+        Long spuId = skuInfo.getSpuId();
+        SpuInfoDescEntity descEntity = spuInfoDescService.getOne(new QueryWrapper<SpuInfoDescEntity>().eq("spu_id", spuId));
+        skuItemVo.setDesc(descEntity);
+        //spu的规格参数信息
+        Long catalogId = skuInfo.getCatalogId();
+        List<SkuItemVo.AttrGroupVo> attrGroupVos = attrGroupService.getAttrGroupWithAttrsBySpuId(spuId,catalogId);
+        skuItemVo.setAttrgroupWithattrVos(attrGroupVos);
+        return skuItemVo;
     }
 
 }

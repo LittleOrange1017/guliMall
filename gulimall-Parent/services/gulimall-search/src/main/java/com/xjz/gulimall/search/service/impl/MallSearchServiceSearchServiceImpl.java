@@ -3,6 +3,7 @@ package com.xjz.gulimall.search.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.xjz.gulimall.search.constant.EsConstant;
 import com.xjz.gulimall.search.dto.SearchParam;
+import com.xjz.gulimall.search.feign.ProductFeignClient;
 import com.xjz.gulimall.search.service.MallSearchService;
 import com.xjz.gulimall.search.vo.SearchResult;
 import org.apache.catalina.util.URLEncoder;
@@ -45,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,6 +54,8 @@ import java.util.stream.Collectors;
 public class MallSearchServiceSearchServiceImpl implements MallSearchService {
     @Autowired
     private RestHighLevelClient restHighLevelClient;
+    @Autowired
+    private ProductFeignClient productFeignClient;
     @Override
     public SearchResult search(SearchParam searchParam) {
         SearchRequest searchRequest=buildSearchRequest(searchParam);
@@ -270,16 +274,27 @@ public class MallSearchServiceSearchServiceImpl implements MallSearchService {
         searchResult.setAttrs(attrVOS);
         if(searchParam.getAttrs()!=null&&!searchParam.getAttrs().isEmpty())
         {
+            Map<Long, String> namesByIds = productFeignClient.getAttrNamesByIds(attrIds);
             List<SearchResult.NavVo> collect = searchParam.getAttrs().stream().map(new Function<String, SearchResult.NavVo>() {
                 @Override
                 public SearchResult.NavVo apply(String attr) {
                     SearchResult.NavVo navVo = new SearchResult.NavVo();
                     String[] split = attr.split("_");
                     navVo.setNavValue(split[1]);
-                    navVo.setNavName("属性");
+                    String attrName = namesByIds.get(Long.valueOf(split[0]));
+                    navVo.setNavName(attrName);
                     String oldQueryString = searchParam.getOldQueryString();
                     String encode= URLEncoder.DEFAULT.encode(attr,StandardCharsets.UTF_8);
-                    String replace = oldQueryString.replace("&attrs=" + encode, "");
+                    String replace=null;
+                    if(split[1].contains("%20"))
+                    {
+                        encode=encode.replace("+","%20");
+                        replace=oldQueryString.replace("&attrs=" + encode, "");
+                    }
+                    else
+                    {
+                        replace=oldQueryString.replace("&attrs=" + encode, "");
+                    }
                     navVo.setLink("http://search.littleorange.com/list.html?" + replace);
                     return navVo;
                 }

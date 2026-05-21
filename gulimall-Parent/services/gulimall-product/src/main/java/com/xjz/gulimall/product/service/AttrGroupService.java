@@ -5,6 +5,7 @@ import com.xjz.gulimall.product.dto.AttrGroupRelationDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
 import com.xjz.gulimall.product.vo.AttrgroupWithattrVo;
+import com.xjz.gulimall.product.vo.SkuItemVo;
 import utils.PageUtils;
 
 import java.util.List;
@@ -29,5 +30,7 @@ public interface AttrGroupService extends IService<AttrGroupEntity> {
     void addRelation(List<AttrGroupRelationDto> attrGroupRelationDto);
 
     List<AttrgroupWithattrVo> getGroupWithattr(Long catelogId);
+
+    List<SkuItemVo.AttrGroupVo> getAttrGroupWithAttrsBySpuId(Long spuId,Long catalogId);
 }
 

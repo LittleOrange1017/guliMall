@@ -85,6 +85,4 @@ public class SkuInfoController {
         SkuInfoEntity skuInfoEntity=skuInfoService.getSkuInfo(skuId);
         return skuInfoEntity.getPrice();
     }
-
-
 }

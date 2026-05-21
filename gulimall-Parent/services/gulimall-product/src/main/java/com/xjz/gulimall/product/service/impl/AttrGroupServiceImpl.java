@@ -9,10 +9,12 @@ import com.xjz.gulimall.product.dto.AttrGroupRelationDto;
 import com.xjz.gulimall.product.entity.AttrAttrgroupRelationEntity;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.entity.AttrGroupEntity;
+import com.xjz.gulimall.product.entity.ProductAttrValueEntity;
 import com.xjz.gulimall.product.service.AttrAttrgroupRelationService;
 import com.xjz.gulimall.product.service.AttrGroupService;
 import com.xjz.gulimall.product.service.AttrService;
 import com.xjz.gulimall.product.vo.AttrgroupWithattrVo;
+import com.xjz.gulimall.product.vo.SkuItemVo;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service("attrGroupService")
@@ -35,6 +38,8 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
     AttrAttrgroupRelationService attrAttrgroupRelationService;
     @Autowired
     AttrDao attrDao;
+    @Autowired
+    private ProductAttrValueServiceImpl productAttrValueService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -154,5 +159,55 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
             }
         }).collect(Collectors.toList());
         return withattrVos;
+    }
+
+    @Override
+    public List<SkuItemVo.AttrGroupVo> getAttrGroupWithAttrsBySpuId(Long spuId,Long catalogId) {
+        //1、查出当前spu对应的所有属性分组信息
+        List<AttrGroupEntity> groupEntities = this.list(new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catalogId));
+        if(groupEntities.isEmpty())
+        {
+            return null;
+        }
+        //把这分组的 ID 抽成一个集合，准备拿去查第二步的关联关系
+        List<Long> groupIds = groupEntities.stream().map(attrGroupEntity -> attrGroupEntity.getAttrGroupId()).collect(Collectors.toList());
+        //根据上一步拿到的 groupIds 集合，批量查出关联关系表
+        List<AttrAttrgroupRelationEntity> relations = attrAttrgroupRelationService.list(new QueryWrapper<AttrAttrgroupRelationEntity>().in("attr_group_id", groupIds));
+        //把这个分组和属性之间的关联实体转成一个字典map
+        //目的就是 以后我想找“基本信息”组下的所有属性，直接map.get(基本信息组Id)就能拿到，不需要再for循环找了
+        //map格式就是 <Long groupId,List<AttrAttrgroupRelationEntity>>
+        Map<Long, List<AttrAttrgroupRelationEntity>> groupRelationMap = relations.stream().collect(Collectors.groupingBy(AttrAttrgroupRelationEntity::getAttrGroupId));
+        //然后就是查具体的SPU底下的规格参数的值
+        List<ProductAttrValueEntity> spuAttrValues = productAttrValueService.list(new QueryWrapper<ProductAttrValueEntity>().eq("spu_id", spuId));
+        //同样，把它也变成map，key是属性ID，value是这个属性实体类
+        Map<Long, ProductAttrValueEntity> spuAttrMap = spuAttrValues.stream().collect(Collectors.toMap(
+                ProductAttrValueEntity::getAttrId,
+                v -> v,
+                (k1, k2) -> k1));
+        return groupEntities.stream().map(new Function<AttrGroupEntity, SkuItemVo.AttrGroupVo>() {
+            @Override
+            public SkuItemVo.AttrGroupVo apply(AttrGroupEntity attrGroupEntity) {
+                SkuItemVo.AttrGroupVo attrGroupVo = new SkuItemVo.AttrGroupVo();
+                attrGroupVo.setAttrGroupName(attrGroupEntity.getAttrGroupName());
+                //提取出每一个分组对应的属性信息
+                List<AttrAttrgroupRelationEntity> attrAttrgroupRelationEntities = groupRelationMap.get(attrGroupEntity.getAttrGroupId());
+                if (attrAttrgroupRelationEntities != null && !attrAttrgroupRelationEntities.isEmpty()) {
+                    //遍历这些属性信息，根据属性信息去找对应的真实的值
+                    List<SkuItemVo.BaseAttrVo> baseAttrVos = attrAttrgroupRelationEntities.stream().filter(relation -> spuAttrMap.containsKey(relation.getAttrId()))
+                            .map(new Function<AttrAttrgroupRelationEntity, SkuItemVo.BaseAttrVo>() {
+                                @Override
+                                public SkuItemVo.BaseAttrVo apply(AttrAttrgroupRelationEntity attrAttrgroupRelationEntity) {
+                                    SkuItemVo.BaseAttrVo baseAttrVo = new SkuItemVo.BaseAttrVo();
+                                    ProductAttrValueEntity attrValue = spuAttrMap.get(attrAttrgroupRelationEntity.getAttrId());
+                                    baseAttrVo.setAttrName(attrValue.getAttrName());
+                                    baseAttrVo.setAttrValue(attrValue.getAttrValue());
+                                    return baseAttrVo;
+                                }
+                            }).collect(Collectors.toList());
+                    attrGroupVo.setAttrVos(baseAttrVos);
+                }
+                return attrGroupVo;
+            }
+        }).collect(Collectors.toList());
     }
 }
