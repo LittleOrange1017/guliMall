@@ -208,6 +208,7 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
                 }
                 return attrGroupVo;
             }
-        }).collect(Collectors.toList());
+        }).filter(attrGroupVo -> attrGroupVo.getAttrVos()!=null&&!attrGroupVo.getAttrVos().isEmpty())
+                .collect(Collectors.toList());
     }
 }
