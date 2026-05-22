@@ -8,6 +8,7 @@ import com.xjz.gulimall.product.service.*;
 import com.xjz.gulimall.product.vo.SkuItemVo;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import utils.Query;
 import com.xjz.gulimall.product.dao.SkuInfoDao;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
     @Autowired
     private SkuImagesService skuImagesService;
     @Autowired
+    @Lazy
     private SpuInfoService spuInfoService;
     @Autowired
     private ProductAttrValueService productAttrValueService;
@@ -38,6 +40,8 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
     private AttrAttrgroupRelationService attrAttrgroupRelationService;
     @Autowired
     private AttrGroupService attrGroupService;
+    @Autowired
+    private SkuSaleAttrValueService skuSaleAttrValueService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         QueryWrapper<SkuInfoEntity> queryWrapper=new QueryWrapper<>();
@@ -111,7 +115,8 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
         List<SkuImagesEntity> imagesEntityList = skuImagesService.list(new QueryWrapper<SkuImagesEntity>().eq("sku_id", skuId));
         skuItemVo.setImages(imagesEntityList);
         //spu销售属性组合
-
+        List<SkuItemVo.SaleAttrVo> saleAttrs=skuSaleAttrValueService.getSaleAttrs(skuInfo.getSpuId());
+        skuItemVo.setSaleAttrs(saleAttrs);
         //spu介绍
         Long spuId = skuInfo.getSpuId();
         SpuInfoDescEntity descEntity = spuInfoDescService.getOne(new QueryWrapper<SpuInfoDescEntity>().eq("spu_id", spuId));

@@ -27,7 +27,7 @@ public class SkuItemVo{
     //private SeckillSkuVo seckillSkuVo;
     @Data
     public static class SaleAttrVo{
-        private String attrId;
+        private Long attrId;
         private String attrName;
         private List<AttrValueWithSkuIdVo> attrValues;
     }

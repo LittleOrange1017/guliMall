@@ -15,7 +15,7 @@ import java.util.List;
 public class ItemContoller {
     @Autowired
     private SkuInfoService skuInfoService;
-    @GetMapping({"/{skuId}"})
+    @GetMapping({"/{skuId:[0-9]+}.html"})
     public String skuItem(@PathVariable("skuId") Long skuId, Model model){
         SkuItemVo itemVo=skuInfoService.getItem(skuId);
         model.addAttribute("itemVo",itemVo);

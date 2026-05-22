@@ -7,6 +7,7 @@ import com.xjz.gulimall.product.dto.SpuSaveDto;
 import com.xjz.gulimall.product.entity.AttrEntity;
 import com.xjz.gulimall.product.service.AttrService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import utils.Query;
 import com.xjz.gulimall.product.dao.ProductAttrValueDao;
 import com.xjz.gulimall.product.entity.ProductAttrValueEntity;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @Service("productAttrValueService")
 public class ProductAttrValueServiceImpl extends ServiceImpl<ProductAttrValueDao, ProductAttrValueEntity> implements ProductAttrValueService {
     @Autowired
+    @Lazy
     private AttrService attrService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
