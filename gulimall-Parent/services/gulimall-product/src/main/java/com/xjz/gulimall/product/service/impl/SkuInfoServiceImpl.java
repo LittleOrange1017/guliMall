@@ -3,6 +3,7 @@ package com.xjz.gulimall.product.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xjz.gulimall.product.config.MyThreadConfig;
 import com.xjz.gulimall.product.entity.*;
 import com.xjz.gulimall.product.service.*;
 import com.xjz.gulimall.product.vo.SkuItemVo;
@@ -18,6 +19,8 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -42,6 +45,8 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
     private AttrGroupService attrGroupService;
     @Autowired
     private SkuSaleAttrValueService skuSaleAttrValueService;
+    @Autowired
+    private ThreadPoolExecutor executor;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         QueryWrapper<SkuInfoEntity> queryWrapper=new QueryWrapper<>();
@@ -109,23 +114,41 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
     public SkuItemVo getItem(Long skuId) {
         SkuItemVo skuItemVo=new SkuItemVo();
         //sku基本信息
-        SkuInfoEntity skuInfo = this.getSkuInfo(skuId);
-        skuItemVo.setInfo(skuInfo);
+        CompletableFuture<SkuInfoEntity> infoFuture = CompletableFuture.supplyAsync(() -> {
+            SkuInfoEntity skuInfo = this.getSkuInfo(skuId);
+            skuItemVo.setInfo(skuInfo);
+            return skuInfo;
+        }, executor);
         //sku图片信息
-        List<SkuImagesEntity> imagesEntityList = skuImagesService.list(new QueryWrapper<SkuImagesEntity>().eq("sku_id", skuId));
-        skuItemVo.setImages(imagesEntityList);
+        CompletableFuture<Void> imageFuture = CompletableFuture.runAsync(() -> {
+            List<SkuImagesEntity> imagesEntityList = skuImagesService.list(new QueryWrapper<SkuImagesEntity>().eq("sku_id", skuId));
+            skuItemVo.setImages(imagesEntityList);
+        }, executor);
         //spu销售属性组合
-        List<SkuItemVo.SaleAttrVo> saleAttrs=skuSaleAttrValueService.getSaleAttrs(skuInfo.getSpuId());
-        skuItemVo.setSaleAttrs(saleAttrs);
+        CompletableFuture<Void> saleAttrFuture = infoFuture.thenAcceptAsync(info -> {
+            if (info != null) {
+                List<SkuItemVo.SaleAttrVo> saleAttrs = skuSaleAttrValueService.getSaleAttrs(info.getSpuId());
+                skuItemVo.setSaleAttrs(saleAttrs);
+            }
+        }, executor);
         //spu介绍
-        Long spuId = skuInfo.getSpuId();
-        SpuInfoDescEntity descEntity = spuInfoDescService.getOne(new QueryWrapper<SpuInfoDescEntity>().eq("spu_id", spuId));
-        skuItemVo.setDesc(descEntity);
+        CompletableFuture<Void> spuDescFuture = infoFuture.thenAcceptAsync(info -> {
+            Long spuId = info.getSpuId();
+            SpuInfoDescEntity descEntity = spuInfoDescService.getOne(new QueryWrapper<SpuInfoDescEntity>().eq("spu_id", spuId));
+            skuItemVo.setDesc(descEntity);
+        }, executor);
         //spu的规格参数信息
-        Long catalogId = skuInfo.getCatalogId();
-        List<SkuItemVo.AttrGroupVo> attrGroupVos = attrGroupService.getAttrGroupWithAttrsBySpuId(spuId,catalogId);
-        skuItemVo.setAttrgroupWithattrVos(attrGroupVos);
+        CompletableFuture<Void> attrFuture = infoFuture.thenAcceptAsync(info -> {
+            Long catalogId = info.getCatalogId();
+            List<SkuItemVo.AttrGroupVo> attrGroupVos = attrGroupService.getAttrGroupWithAttrsBySpuId(info.getSpuId(), catalogId);
+            skuItemVo.setAttrgroupWithattrVos(attrGroupVos);
+        }, executor);
+        CompletableFuture.allOf(
+                saleAttrFuture,
+                spuDescFuture,
+                attrFuture,
+                imageFuture
+        ).join();
         return skuItemVo;
     }
-
 }
