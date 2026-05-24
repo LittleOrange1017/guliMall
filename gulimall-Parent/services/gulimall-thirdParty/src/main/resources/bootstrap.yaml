@@ -17,4 +17,4 @@ spring:
             group: DEFAULT_GROUP
             type: yaml
 server:
-  port: 12000
+  port: 12500

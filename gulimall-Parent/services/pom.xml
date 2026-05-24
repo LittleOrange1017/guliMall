@@ -17,6 +17,7 @@
         <module>gulimall-ware</module>
         <module>gulimall-thirdParty</module>
         <module>gulimall-search</module>
+        <module>gulimall-auth</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
