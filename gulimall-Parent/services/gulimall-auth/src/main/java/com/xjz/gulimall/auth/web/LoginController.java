@@ -45,14 +45,22 @@ public class LoginController {
             redirectAttributes.addFlashAttribute("dto",loginDto);
             return "redirect:http://auth.littleorange.com/login.html";
         }
-        R login = memberFeignClient.login(loginDto);
-        if(login.get("code").equals(BizCodeEnum.LOGINACTT_PASSWORD_ERROR))
+        R loginResult = memberFeignClient.login(loginDto);
+        Map<String,String> errors=new HashMap<>();
+        if(loginResult.get("code").equals(BizCodeEnum.USERNAME_NOT_EXIST.getCode()))
         {
-            Map<String,String> errors=new HashMap<>();
-            errors.put("errors", (String) login.get("msg"));
+            errors.put("loginacct", (String) loginResult.get("msg"));
+        }
+        else if(loginResult.get("code").equals(BizCodeEnum.PASSWORD_ERROR.getCode()))
+        {
+            errors.put("password", (String) loginResult.get("msg"));
+        }
+        if(!errors.isEmpty())
+        {
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("dto",loginDto);
             return "redirect:http://auth.littleorange.com/login.html";
         }
-        return "http://littleorange.com/index.html";
+        return "redirect:http://littleorange.com/index.html";
     }
 }

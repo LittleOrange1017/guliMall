@@ -107,7 +107,7 @@ public class MemberController {
      * 登录验证业务
      */
     @PostMapping("/login")
-    public R login(LoginFeginVo vo)
+    public R login(@RequestBody LoginFeginVo vo)
     {
         memberService.login(vo);
         return R.ok();

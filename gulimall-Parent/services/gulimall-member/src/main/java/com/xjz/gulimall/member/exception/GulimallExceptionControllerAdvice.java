@@ -22,11 +22,11 @@ public class GulimallExceptionControllerAdvice {
     @ExceptionHandler(value = PassWordIsNotCorrectException.class)
     public R handlePassWordIsNotCorrectException(PassWordIsNotCorrectException e)
     {
-        return R.error(BizCodeEnum.LOGINACTT_PASSWORD_ERROR.getCode(), e.getMessage());
+        return R.error(BizCodeEnum.PASSWORD_ERROR.getCode(), e.getMessage());
     }
     @ExceptionHandler(value = UsernameISNOTExistException.class)
     public R handleUsernameISNOTExistException(UsernameISNOTExistException e)
     {
-        return R.error(BizCodeEnum.LOGINACTT_PASSWORD_ERROR.getCode(), e.getMessage());
+        return R.error(BizCodeEnum.USERNAME_NOT_EXIST.getCode(), e.getMessage());
     }
 }
