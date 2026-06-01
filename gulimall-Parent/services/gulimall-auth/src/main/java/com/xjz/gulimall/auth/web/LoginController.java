@@ -1,4 +1,4 @@
-package com.xjz.gulimall.coupon.web;
+package com.xjz.gulimall.auth.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

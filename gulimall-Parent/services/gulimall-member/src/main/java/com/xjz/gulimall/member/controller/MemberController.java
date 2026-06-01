@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.xjz.gulimall.member.feign.CouponFeignClient;
+import com.xjz.gulimall.member.vo.RegFeignVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,6 +93,13 @@ public class MemberController {
 		memberService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
+    }
+    /**
+     * 注册业务
+     */
+    @PostMapping("member/member/regist")
+    public R regist(@RequestBody RegFeignVo regFeignVo){
+
     }
 
 }

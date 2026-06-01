@@ -3,13 +3,247 @@
 
 <head>
     <meta charset="utf-8"/>
-    <title>gulimall注册页面</title>
+    <title>小橘子商城注册页面</title>
     <script src="/static/reg/libs/jquery-1.12.4.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="/static/reg/js/jQuery/jquery-3.1.1.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/reg/bootStrap/bootstrap/css/bootstrap.css"/>
     <link rel="stylesheet" type="text/css" href="/static/reg/sass/index.css"/>
     <link rel="stylesheet" type="text/css" href="/static/reg/css/index.css">
+	<style>
+		/* 隐藏协议弹窗遮罩层 */
+		.laoda {
+			display: none;
+		}
 
+		/* 修复 section 布局，使卡片居中 */
+		section {
+			display: flex !important;
+			justify-content: center !important;
+			align-items: flex-start;
+			width: 100% !important;
+			max-width: 1100px;
+			height: auto !important;
+			min-height: 700px;
+		}
+
+		/* 容器居中与卡片质感 */
+		.register-card-container {
+			max-width: 460px;
+			margin: 50px auto;
+			background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+			padding: 40px 35px;
+			border-radius: 12px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+			border: 1px solid #f0f0f0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			position: relative;
+			z-index: 10;
+		}
+
+		/* 装饰性顶部条 */
+		.register-card-container::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: linear-gradient(90deg, #e3393c, #ff6b6b);
+			border-radius: 12px 12px 0 0;
+		}
+
+		/* 修复 form 样式冲突 */
+		.register-card-container form {
+			width: 100% !important;
+			height: auto !important;
+			margin: 0 !important;
+			float: none !important;
+			border-right: none !important;
+			border-bottom: none !important;
+			padding: 0 !important;
+		}
+
+		/* 标题美化 */
+		.register-card-title {
+			font-size: 24px;
+			font-weight: 600;
+			color: #2c3e50;
+			text-align: center;
+			margin-bottom: 30px;
+			letter-spacing: 1px;
+		}
+
+		/* 单个输入组布局 */
+		.reg-form-group {
+			margin-bottom: 20px;
+			position: relative;
+		}
+
+		.reg-form-group label {
+			display: block;
+			font-size: 13px;
+			font-weight: 600;
+			color: #57606f;
+			margin-bottom: 8px;
+		}
+
+		/* 输入框样式与过渡动画 */
+		.reg-input-control {
+			width: 100%;
+			padding: 12px 16px;
+			border: 1px solid #ced6e0;
+			border-radius: 6px;
+			font-size: 14px;
+			color: #2f3542;
+			background-color: #fafafa;
+			transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+			outline: none;
+			box-sizing: border-box;
+		}
+
+		/* 输入框聚焦时的呼吸灯高亮效果 */
+		.reg-input-control:focus {
+			border-color: #e3393c;
+			background-color: #ffffff;
+			box-shadow: 0 0 0 4px rgba(227, 57, 60, 0.12);
+		}
+
+		/* 输入框悬停效果 */
+		.reg-input-control:hover {
+			border-color: #a4b0be;
+			background-color: #ffffff;
+		}
+
+		/* 验证码双栏并列排版 */
+		.reg-code-row {
+			display: flex;
+			gap: 12px;
+			width: 100%;
+		}
+
+		.reg-code-row .reg-input-control {
+			flex: 1;
+		}
+
+		/* 现代感发送验证码按钮 */
+		.send-code-btn {
+			flex-shrink: 0;
+			width: 130px;
+			height: 46px; /* 高度与输入框对齐 */
+			background-color: #e3393c;
+			color: #ffffff;
+			border: none;
+			border-radius: 6px;
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			box-sizing: border-box;
+		}
+
+		.send-code-btn:hover {
+			background-color: #c51e25;
+			box-shadow: 0 4px 12px rgba(227, 57, 60, 0.2);
+		}
+
+		.send-code-btn:disabled {
+			background-color: #a4b0be !important;
+			color: #ffffff !important;
+			cursor: not-allowed;
+			box-shadow: none !important;
+		}
+
+		/* 炫酷注册提交大按钮 */
+		.submit_btn {
+			width: 100%;
+			padding: 14px;
+			background-color: #e3393c;
+			color: #ffffff;
+			border: none;
+			border-radius: 6px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			margin-top: 15px;
+		}
+
+		.submit_btn:hover {
+			background-color: #c51e25;
+			box-shadow: 0 6px 20px rgba(227, 57, 60, 0.3);
+		}
+
+		.submit_btn:active {
+			transform: translateY(1px);
+			box-shadow: 0 2px 8px rgba(227, 57, 60, 0.2);
+		}
+
+		/* 优雅的红色扁平化错误提示 */
+		.reg-error-msg {
+			display: block;
+			color: #ff4757;
+			font-size: 12px;
+			margin-top: 6px;
+			font-weight: 500;
+			animation: fadeIn 0.3s ease;
+		}
+
+		@keyframes fadeIn {
+			from { opacity: 0; transform: translateY(-3px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+
+		/* 隐藏右侧企业注册区 */
+		.two {
+			display: none;
+		}
+
+		/* 响应式设计 */
+		@media (max-width: 768px) {
+			section {
+				width: 100% !important;
+				min-height: auto !important;
+				padding: 20px 16px;
+			}
+
+			.register-card-container {
+				max-width: 100% !important;
+				margin: 20px auto !important;
+				padding: 30px 20px !important;
+				border-radius: 8px !important;
+			}
+
+			.register-card-title {
+				font-size: 20px !important;
+			}
+
+			.send-code-btn {
+				width: 110px !important;
+				font-size: 12px !important;
+			}
+
+			.two {
+				display: none !important;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.register-card-container {
+				padding: 24px 16px !important;
+				margin: 10px auto !important;
+			}
+
+			.reg-code-row {
+				flex-direction: column !important;
+				gap: 8px !important;
+			}
+
+			.send-code-btn {
+				width: 100% !important;
+				height: 42px !important;
+			}
+		}
+	</style>
 
 </head>
 
@@ -6038,7 +6272,7 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
     </div>
 </header>
 <section>
-    <form action="" class="one">
+    <!--<form action="" class="one">
         <div class="register-box">
             <label for="username" class="username_label">用 户 名
                 <input maxlength="20" type="text" placeholder="您的用户名和登录名">
@@ -6075,11 +6309,11 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
         </div>
 		<div class="register-box">
 			<label class="other_label">验 证 码
-				<!-- name="code" 是为了以后提交表单时后端能接收到 -->
+				&lt;!&ndash; name="code" 是为了以后提交表单时后端能接收到 &ndash;&gt;
 				<input maxlength="20" type="text" name="code" placeholder="请输入短信验证码" class="caa">
 			</label>
-			<!-- ★ 把原来的 span id="code" 爆改为发送验证码按钮 ★ -->
-			<!-- 内联了一点简单的 CSS 让它看起来像个按钮，你可以根据你们的 UI 自行微调 -->
+			&lt;!&ndash; ★ 把原来的 span id="code" 爆改为发送验证码按钮 ★ &ndash;&gt;
+			&lt;!&ndash; 内联了一点简单的 CSS 让它看起来像个按钮，你可以根据你们的 UI 自行微调 &ndash;&gt;
 			<a href="javascript:void(0);" id="sendCodeBtn"
 		       style="display: inline-block; padding: 8px 15px; background: #e3393c; color: #fff; text-decoration: none; font-size: 14px; border-radius: 2px; margin-left: 10px; text-align: center; width: 120px;">
 				发送验证码
@@ -6100,7 +6334,58 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
             </div>
         </div>
 
-    </form>
+    </form>-->
+	<div class="register-card-container">
+		<div class="register-card-title">新用户注册</div>
+		<form action="/register" method="post">
+			<!-- 1. 用户名 -->
+			<div class="reg-form-group">
+				<label>用户名</label>
+				<input type="text" name="userName" placeholder="设置您的账户名" class="reg-input-control">
+				<!-- 校验报错提示 -->
+				<span class="reg-error-msg"
+				      th:if="${errors != null and #maps.containsKey(errors, 'userName')}"
+				      th:text="${errors.userName}"></span>
+			</div>
+
+			<!-- 2. 密码 -->
+			<div class="reg-form-group">
+				<label>设置密码</label>
+				<input type="password" name="password" placeholder="建议使用字母加数字组合" class="reg-input-control">
+				<!-- 校验报错提示 -->
+				<span class="reg-error-msg"
+				      th:if="${errors != null and #maps.containsKey(errors, 'password')}"
+				      th:text="${errors.password}"></span>
+			</div>
+
+			<!-- 3. 手机号 -->
+			<div class="reg-form-group">
+				<label>手机号码</label>
+				<input type="text" id="phoneNum" name="phone" placeholder="建议使用常用手机号" class="reg-input-control">
+				<!-- 校验报错提示 -->
+				<span class="reg-error-msg"
+				      th:if="${errors != null and #maps.containsKey(errors, 'phone')}"
+				      th:text="${errors.phone}"></span>
+			</div>
+
+			<!-- 4. 验证码（并列排版） -->
+			<div class="reg-form-group">
+				<label>短信验证码</label>
+				<div class="reg-code-row">
+					<input type="text" name="code" placeholder="输入六位验证码" class="reg-input-control">
+					<!-- 升级的高级感按钮 -->
+					<button type="button" id="sendCodeBtn" class="send-code-btn">获取验证码</button>
+				</div>
+				<!-- 校验报错提示 -->
+				<span class="reg-error-msg"
+				      th:if="${errors != null and #maps.containsKey(errors, 'code')}"
+				      th:text="${errors.code}"></span>
+			</div>
+
+			<!-- 注册提交 -->
+			<button type="submit" class="submit_btn">立即注册</button>
+		</form>
+	</div>
     <div class="two">
         <div class="right_r">
             <div class="right_r1">
@@ -6165,168 +6450,10 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
 </div>
 <p class="bq">Copyright©2004-2016 谷粒商城gulimall.com 版权所有</p>
 <br/><br/>
+<!-- 旧表单的JavaScript代码已禁用，避免与新表单冲突 -->
 <script type="text/javascript" charset="utf-8">
-    $(function () {
-        var stuList = getStuList(); //设置传送信息：学生的集合
-
-        //聚焦失焦input
-        $('input').eq(0).focus(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("支持中文，字母，数字，'-'，'_'的多种组合");
-            }
-        })
-        $('input').eq(1).focus(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("建议使用字母、数字和符号两种以上的组合，6-20个字符");
-            }
-        })
-        $('input').eq(2).focus(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("请再次输入密码");
-            }
-        })
-        $('input').eq(3).focus(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("验证完后，你可以使用该手机登陆和找回密码");
-            }
-        })
-        //input各种判断
-        //用户名：
-        $('input').eq(0).blur(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("");
-                $(this).parent().next("div").css("color", '#ccc');
-            } else if ($(this).val().length > 0 && $(this).val().length < 4) {
-                $(this).parent().next("div").text("长度只能在4-20个字符之间");
-                $(this).parent().next("div").css("color", 'red');
-            } else if ($(this).val().length >= 4 && !isNaN($(this).val())) {
-                $(this).parent().next("div").text("用户名不能为纯数字");
-                $(this).parent().next("div").css("color", 'red');
-            } else {
-                for (var m = 0; m < stuList.length; m++) {
-                    if ($(this).val() == stuList[m].name) {
-                        $(this).parent().next("div").text("该用户名已被注册");
-                        $(this).parent().next("div").css("color", 'red');
-                        return;
-                    }
-                }
-                $(this).parent().next("div").text("");
-            }
-        })
-        //密码
-        $('input').eq(1).blur(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("");
-                $(this).parent().next("div").css("color", '#ccc');
-            } else if ($(this).val().length > 0 && $(this).val().length < 6) {
-                $(this).parent().next("div").text("长度只能在6-20个字符之间");
-                $(this).parent().next("div").css("color", 'red');
-            } else {
-                $(this).parent().next("div").text("");
-            }
-        })
-        //	确认密码
-        $('input').eq(2).blur(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("");
-                $(this).parent().next("div").css("color", '#ccc');
-            } else if ($(this).val() != $('input').eq(1).val()) {
-                $(this).parent().next("div").text("两次密码不匹配");
-                $(this).parent().next("div").css("color", 'red');
-            } else {
-                $(this).parent().next("div").text("");
-            }
-        })
-        //	手机号
-        $('input').eq(3).blur(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next("div").text("");
-                $(this).parent().next("div").css("color", '#ccc');
-            } else if ($(this).val().substr(0, 3) != 138 && $(this).val().substr(0, 3) != 189 && $(this).val().substr(0, 3) != 139 && $(this).val().substr(0, 3) != 158 && $(this).val().substr(0, 3) != 188 && $(this).val().substr(0, 3) != 157 && $(this).val().length != 11) {
-                $(this).parent().next("div").text("手机号格式不正确");
-                $(this).parent().next("div").css("color", 'red');
-            } else {
-                $(this).parent().next("div").text("");
-            }
-        })
-        // 	验证码
-        //	 验证码刷新
-        function code() {
-            var str = "qwertyuiopasdfghjklzxcvbnm1234567890QWERTYUIOPLKJHGFDSAZXCVBNM";
-            var str1 = 0;
-            for (var i = 0; i < 4; i++) {
-                str1 += str.charAt(Math.floor(Math.random() * 62))
-            }
-            str1 = str1.substring(1)
-            $("#code").text(str1);
-        }
-
-        code();
-        $("#code").click(code);
-        //	验证码验证
-        $('input').eq(4).blur(function () {
-            if ($(this).val().length == 0) {
-                $(this).parent().next().next("div").text("");
-                $(this).parent().next().next("div").css("color", '#ccc');
-            } else if ($(this).val().toUpperCase() != $("#code").text().toUpperCase()) {
-                $(this).parent().next().next("div").text("验证码不正确");
-                $(this).parent().next().next("div").css("color", 'red');
-            } else {
-                $(this).parent().next().next("div").text("");
-            }
-        })
-        //	提交按钮
-        $("#submit_btn").click(function (e) {
-            for (var j = 0; j < 5; j++) {
-                if ($('input').eq(j).val().length == 0) {
-                    $('input').eq(j).focus();
-                    if (j == 4) {
-                        $('input').eq(j).parent().next().next("div").text("此处不能为空");
-                        $('input').eq(j).parent().next().next("div").css("color", 'red');
-                        e.preventDefault();
-                        return;
-                    }
-                    $('input').eq(j).parent().next(".tips").text("此处不能为空");
-                    $('input').eq(j).parent().next(".tips").css("color", 'red');
-                    e.preventDefault();
-                    return;
-                }
-            }
-            //协议
-            if ($("#xieyi")[0].checked) {
-                //向变量stuList数组添加一个数值，数值内部格式Student(name,password,tel,id)
-                //发送用户信息
-                stuList.push(new Student($('input').eq(0).val(), $('input').eq(1).val(), $('input').eq(3).val(), stuList.length + 1));
-                localStorage.setItem('stuList', JSON.stringify(stuList));
-                alert("注册成功");
-                window.open("userlist.html", "_blank");
-            } else {
-                $("#xieyi").next().next().next(".tips").text("请勾选协议");
-                $("#xieyi").next().next().next(".tips").css("color", 'red');
-                e.preventDefault();
-                return;
-            }
-        })
-
-        //  建立构造函数，构造学生信息模板
-        function Student(name, password, tel, id) {
-            this.name = name;
-            this.password = password;
-            this.tel = tel;
-            this.id = id;
-        }
-
-        //	获取之前所有已经注册的用户集合
-        function getStuList() {
-            var list = localStorage.getItem('stuList');
-            if (list != null) {
-                return JSON.parse(list);
-            } else {
-                return new Array();
-            }
-        }
-
-    })
+    // 旧表单验证代码已注释掉，因为与新表单结构冲突
+    // 新表单使用服务端验证（Thymeleaf渲染的错误提示）
     $(".ty").click(function () {
         $(".zong").hide();
         $(".laoda").hide();
@@ -6401,10 +6528,6 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
 					alert("网络异常，发送验证码失败，请稍后重试！");
 				}
 			});
-			// ==========================================
-			// 发送 Ajax 请求到后端的发短信接口
-			// ==========================================
-			// 稍后我们将在这里写： $.get("/api/sms/sendcode?phone=" + phone)
 		});
 	});
 </script>
