@@ -103,7 +103,7 @@ public class RegController {
         if(regist.get("code").equals(BizCodeEnum.PHONE_EXIST_EXCEPTION.getCode()))
         {
             Map<String,String> errors=new HashMap<>();
-            errors.put("errors", (String) regist.get("msg"));
+            errors.put("phone", (String) regist.get("msg"));
             redirectAttributes.addFlashAttribute("errors",errors);
             redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
@@ -111,7 +111,7 @@ public class RegController {
         else if(regist.get("code").equals(BizCodeEnum.USER_EXIST_EXCEPTION.getCode()))
         {
             Map<String,String> errors=new HashMap<>();
-            errors.put("errors", (String) regist.get("msg"));
+            errors.put("userName", (String) regist.get("msg"));
             redirectAttributes.addFlashAttribute("errors",errors);
             redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
