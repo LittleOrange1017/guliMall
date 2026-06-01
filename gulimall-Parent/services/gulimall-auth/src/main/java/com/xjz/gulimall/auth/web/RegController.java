@@ -55,7 +55,7 @@ public class RegController {
         Random random=new Random();
         String code= String.valueOf(random.nextInt(900000)+100000);
         String value=code+"_"+System.currentTimeMillis();
-        redisTemplate.opsForValue().set(key,value,5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(key,value,1, TimeUnit.MINUTES);
         thirdPartyFeignClient.sendSmsCode(phone,code);
         return R.ok();
     }
@@ -71,6 +71,7 @@ public class RegController {
                             (k1, k2) -> k1 // 如果有重复的，取第一个
                     ));
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
         }
         //校验验证码
@@ -81,6 +82,7 @@ public class RegController {
             Map<String,String> errors=new HashMap<>();
             errors.put("code","验证码过期");
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
         }
         String oldCode=value.split("_")[0];
@@ -89,6 +91,7 @@ public class RegController {
             Map<String,String> errors=new HashMap<>();
             errors.put("code","验证码错误");
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
         }
         /*
@@ -97,18 +100,20 @@ public class RegController {
         RegFeignDto regFeignDto=new RegFeignDto();
         BeanUtils.copyProperties(regDto,regFeignDto);
         R regist = memberFeignClient.regist(regFeignDto);
-        if(regist.get("code").equals(BizCodeEnum.PHONE_EXIST_EXCEPTION))
+        if(regist.get("code").equals(BizCodeEnum.PHONE_EXIST_EXCEPTION.getCode()))
         {
             Map<String,String> errors=new HashMap<>();
             errors.put("errors", (String) regist.get("msg"));
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
         }
-        else if(regist.get("code").equals(BizCodeEnum.USER_EXIST_EXCEPTION))
+        else if(regist.get("code").equals(BizCodeEnum.USER_EXIST_EXCEPTION.getCode()))
         {
             Map<String,String> errors=new HashMap<>();
             errors.put("errors", (String) regist.get("msg"));
             redirectAttributes.addFlashAttribute("errors",errors);
+            redirectAttributes.addFlashAttribute("regVo", regDto);
             return "redirect:http://auth.littleorange.com/reg.html";
         }
         //删除验证码

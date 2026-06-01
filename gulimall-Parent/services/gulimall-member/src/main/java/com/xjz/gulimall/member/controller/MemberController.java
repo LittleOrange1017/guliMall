@@ -97,7 +97,7 @@ public class MemberController {
     /**
      * 注册业务
      */
-    @PostMapping("member/member/regist")
+    @PostMapping("/regist")
     public R regist(@RequestBody RegFeignVo regFeignVo){
         memberService.regist(regFeignVo);
         return R.ok();

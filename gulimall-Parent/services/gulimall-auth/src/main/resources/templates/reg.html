@@ -6341,7 +6341,9 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
 			<!-- 1. 用户名 -->
 			<div class="reg-form-group">
 				<label>用户名</label>
-				<input type="text" name="userName" placeholder="设置您的账户名" class="reg-input-control">
+				<input type="text" name="userName"
+				       th:value="${regVo != null ? regVo.userName : ''}"
+				       placeholder="设置您的账户名" class="reg-input-control">
 				<!-- 校验报错提示 -->
 				<span class="reg-error-msg"
 				      th:if="${errors != null and #maps.containsKey(errors, 'userName')}"
@@ -6361,7 +6363,9 @@ Cookie</span>是由网页服务器存放在您的访问设备上的文本文件�
 			<!-- 3. 手机号 -->
 			<div class="reg-form-group">
 				<label>手机号码</label>
-				<input type="text" id="phoneNum" name="phone" placeholder="建议使用常用手机号" class="reg-input-control">
+				<input type="text" id="phoneNum" name="phone"
+				       th:value="${regVo != null ? regVo.phone : ''}"
+				       placeholder="建议使用常用手机号" class="reg-input-control">
 				<!-- 校验报错提示 -->
 				<span class="reg-error-msg"
 				      th:if="${errors != null and #maps.containsKey(errors, 'phone')}"
