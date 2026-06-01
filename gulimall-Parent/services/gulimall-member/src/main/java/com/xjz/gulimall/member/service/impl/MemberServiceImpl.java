@@ -1,6 +1,13 @@
 package com.xjz.gulimall.member.service.impl;
 
+import com.xjz.gulimall.member.exception.PhoneExistException;
+import com.xjz.gulimall.member.exception.UsernameExistException;
+import com.xjz.gulimall.member.vo.RegFeignVo;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -25,6 +32,43 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         );
 
         return new PageUtils(page);
+    }
+
+    @Override
+    public void regist(RegFeignVo vo) {
+        MemberEntity member=new MemberEntity();
+        checkPhoneUnique(vo.getPhone());
+        checkUsernameUnique(vo.getUserName());
+        member.setUsername(vo.getUserName());
+        member.setMobile(vo.getPhone());
+        member.setNickname(vo.getUserName());
+        member.setLevelId(1L);
+        BCryptPasswordEncoder passwordEncoder=new BCryptPasswordEncoder();
+        String encode = passwordEncoder.encode(vo.getPassword());
+        member.setPassword(encode);
+        Date date=new Date();
+        member.setCreateTime(date);
+        this.save(member);
+    }
+
+    private void checkUsernameUnique(String userName) {
+        QueryWrapper<MemberEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("username",userName);
+        long count = this.count(queryWrapper);
+        if(count>0)
+        {
+            throw new UsernameExistException();
+        }
+    }
+
+    private void checkPhoneUnique(String phone) {
+        QueryWrapper<MemberEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("mobile",phone);
+        long count = this.count(queryWrapper);
+        if(count>0)
+        {
+            throw new PhoneExistException();
+        }
     }
 
 }

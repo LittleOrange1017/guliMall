@@ -99,7 +99,8 @@ public class MemberController {
      */
     @PostMapping("member/member/regist")
     public R regist(@RequestBody RegFeignVo regFeignVo){
-
+        memberService.regist(regFeignVo);
+        return R.ok();
     }
 
 }

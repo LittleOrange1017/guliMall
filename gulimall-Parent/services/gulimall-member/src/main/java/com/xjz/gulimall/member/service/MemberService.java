@@ -1,6 +1,7 @@
 package com.xjz.gulimall.member.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xjz.gulimall.member.vo.RegFeignVo;
 import utils.PageUtils;
 import com.xjz.gulimall.member.entity.MemberEntity;
 
@@ -16,5 +17,7 @@ import java.util.Map;
 public interface MemberService extends IService<MemberEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    void regist(RegFeignVo regFeignVo);
 }
 

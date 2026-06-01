@@ -2,7 +2,9 @@ package com.xjz.gulimall.auth.web;
 
 import com.xjz.gulimall.auth.dto.RegDto;
 import com.xjz.gulimall.auth.dto.RegFeignDto;
+import com.xjz.gulimall.auth.feign.MemberFeignClient;
 import com.xjz.gulimall.auth.feign.ThirdPartyFeignClient;
+import exception.BizCodeEnum;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -30,6 +32,8 @@ public class RegController {
     private ThirdPartyFeignClient thirdPartyFeignClient;
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private MemberFeignClient memberFeignClient;
     @GetMapping({"/reg.html","/reg"})
     public String loginPage(){
         return "reg";
@@ -92,6 +96,21 @@ public class RegController {
          */
         RegFeignDto regFeignDto=new RegFeignDto();
         BeanUtils.copyProperties(regDto,regFeignDto);
+        R regist = memberFeignClient.regist(regFeignDto);
+        if(regist.get("code").equals(BizCodeEnum.PHONE_EXIST_EXCEPTION))
+        {
+            Map<String,String> errors=new HashMap<>();
+            errors.put("errors", (String) regist.get("msg"));
+            redirectAttributes.addFlashAttribute("errors",errors);
+            return "redirect:http://auth.littleorange.com/reg.html";
+        }
+        else if(regist.get("code").equals(BizCodeEnum.USER_EXIST_EXCEPTION))
+        {
+            Map<String,String> errors=new HashMap<>();
+            errors.put("errors", (String) regist.get("msg"));
+            redirectAttributes.addFlashAttribute("errors",errors);
+            return "redirect:http://auth.littleorange.com/reg.html";
+        }
         //删除验证码
         redisTemplate.delete("sms:code:"+regDto.getPhone());
         return "redirect:http://auth.littleorange.com/login.html";
