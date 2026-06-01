@@ -1,7 +1,10 @@
 package com.xjz.gulimall.member.service.impl;
 
+import com.xjz.gulimall.member.exception.PassWordIsNotCorrectException;
 import com.xjz.gulimall.member.exception.PhoneExistException;
 import com.xjz.gulimall.member.exception.UsernameExistException;
+import com.xjz.gulimall.member.exception.UsernameISNOTExistException;
+import com.xjz.gulimall.member.vo.LoginFeginVo;
 import com.xjz.gulimall.member.vo.RegFeignVo;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,6 +52,27 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         Date date=new Date();
         member.setCreateTime(date);
         this.save(member);
+    }
+
+    @Override
+    public void login(LoginFeginVo vo) {
+        String password = vo.getPassword();
+        String loginacct = vo.getLoginacct();
+        MemberEntity entity = this.getOne(new QueryWrapper<MemberEntity>()
+                .eq("username", loginacct)
+                .or().eq("mobile", loginacct)
+                .or().eq("email", loginacct));
+        if(entity==null)
+        {
+            throw new UsernameISNOTExistException();
+        }
+        String entityPassword = entity.getPassword();
+        BCryptPasswordEncoder encoder=new BCryptPasswordEncoder();
+        boolean matches = encoder.matches(password, entityPassword);
+        if(!matches)
+        {
+            throw new PassWordIsNotCorrectException();
+        }
     }
 
     private void checkUsernameUnique(String userName) {

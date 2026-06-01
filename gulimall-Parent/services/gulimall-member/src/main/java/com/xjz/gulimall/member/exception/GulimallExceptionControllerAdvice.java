@@ -19,4 +19,14 @@ public class GulimallExceptionControllerAdvice {
     {
         return R.error(BizCodeEnum.USER_EXIST_EXCEPTION.getCode(), e.getMessage());
     }
+    @ExceptionHandler(value = PassWordIsNotCorrectException.class)
+    public R handlePassWordIsNotCorrectException(PassWordIsNotCorrectException e)
+    {
+        return R.error(BizCodeEnum.LOGINACTT_PASSWORD_ERROR.getCode(), e.getMessage());
+    }
+    @ExceptionHandler(value = UsernameISNOTExistException.class)
+    public R handleUsernameISNOTExistException(UsernameISNOTExistException e)
+    {
+        return R.error(BizCodeEnum.LOGINACTT_PASSWORD_ERROR.getCode(), e.getMessage());
+    }
 }

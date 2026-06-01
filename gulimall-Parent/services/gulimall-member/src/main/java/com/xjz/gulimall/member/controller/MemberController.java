@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.xjz.gulimall.member.feign.CouponFeignClient;
+import com.xjz.gulimall.member.vo.LoginFeginVo;
 import com.xjz.gulimall.member.vo.RegFeignVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -100,6 +101,15 @@ public class MemberController {
     @PostMapping("/regist")
     public R regist(@RequestBody RegFeignVo regFeignVo){
         memberService.regist(regFeignVo);
+        return R.ok();
+    }
+    /**
+     * 登录验证业务
+     */
+    @PostMapping("/login")
+    public R login(LoginFeginVo vo)
+    {
+        memberService.login(vo);
         return R.ok();
     }
 

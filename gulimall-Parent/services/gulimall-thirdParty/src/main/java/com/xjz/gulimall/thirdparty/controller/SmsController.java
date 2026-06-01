@@ -45,7 +45,7 @@ public class SmsController {
                     requestEntity,
                     String.class
             );
-            System.out.println("阿里云国阳云短信发送结果：" + response.getBody());
+            //System.out.println("阿里云国阳云短信发送结果：" + response.getBody());
             return R.ok().put("code",200);
         }catch (Exception e)
         {
