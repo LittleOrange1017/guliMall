@@ -2,6 +2,7 @@ package com.xjz.gulimall.member.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xjz.gulimall.member.vo.LoginFeginVo;
+import com.xjz.gulimall.member.vo.LoginOrRegistFeignVo;
 import com.xjz.gulimall.member.vo.RegFeignVo;
 import utils.PageUtils;
 import com.xjz.gulimall.member.entity.MemberEntity;
@@ -22,5 +23,7 @@ public interface MemberService extends IService<MemberEntity> {
     void regist(RegFeignVo regFeignVo);
 
     void login(LoginFeginVo vo);
+
+    void loginOrRegist(LoginOrRegistFeignVo vo);
 }
 

@@ -124,12 +124,13 @@ public class LoginController {
                 .build();
         HttpResponse<String> userHttpResponse = httpClient.send(userReq, HttpResponse.BodyHandlers.ofString());
         String userBody = userHttpResponse.body();
+        log.info(userBody);
         GiteeUserDto giteeUserDto = JSON.parseObject(userBody, GiteeUserDto.class);
         if (giteeUserDto == null || giteeUserDto.getId() == null) {
             return "redirect:http://auth.littleorange.com/login.html";
         }
-        //远程调用会员服务去存储信息
-
-        return "redirect:http://littleorange.com";
+        //远程调用会员服务的登录或者注册判断方法进行后续业务处理
+        R r = memberFeignClient.loginOrRegist(giteeUserDto);
+        return "redirect:http://auth.littleorange.com/login.html";
     }
 }

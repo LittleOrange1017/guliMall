@@ -8,7 +8,8 @@ public enum BizCodeEnum {
     PHONE_EXIST_EXCEPTION(15002, "手机号已存在"),
     LOGINACTT_PASSWORD_ERROR(15003, "账号或密码错误"),
     USERNAME_NOT_EXIST(15004, "用户名不存在"),
-    PASSWORD_ERROR(15005, "密码错误");
+    PASSWORD_ERROR(15005, "密码错误"),
+    SOCIALUSER_IS_EXIST(15006,"社交用户已经存在");
     private final int code;
     private final String msg;
     BizCodeEnum(int code, String msg) {

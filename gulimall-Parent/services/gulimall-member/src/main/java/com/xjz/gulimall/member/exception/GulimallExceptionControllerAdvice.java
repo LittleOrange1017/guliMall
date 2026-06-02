@@ -29,4 +29,9 @@ public class GulimallExceptionControllerAdvice {
     {
         return R.error(BizCodeEnum.USERNAME_NOT_EXIST.getCode(), e.getMessage());
     }
+    @ExceptionHandler(value = SocialUserISExistException.class)
+    public R handlerSocialUserISExistException(SocialUserISExistException e)
+    {
+        return R.error(BizCodeEnum.SOCIALUSER_IS_EXIST.getCode(), e.getMessage());
+    }
 }

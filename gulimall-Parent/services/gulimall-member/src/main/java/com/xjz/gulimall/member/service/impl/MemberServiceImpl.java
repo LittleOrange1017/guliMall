@@ -1,10 +1,8 @@
 package com.xjz.gulimall.member.service.impl;
 
-import com.xjz.gulimall.member.exception.PassWordIsNotCorrectException;
-import com.xjz.gulimall.member.exception.PhoneExistException;
-import com.xjz.gulimall.member.exception.UsernameExistException;
-import com.xjz.gulimall.member.exception.UsernameISNOTExistException;
+import com.xjz.gulimall.member.exception.*;
 import com.xjz.gulimall.member.vo.LoginFeginVo;
+import com.xjz.gulimall.member.vo.LoginOrRegistFeignVo;
 import com.xjz.gulimall.member.vo.RegFeignVo;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -76,6 +74,26 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         {
             throw new PassWordIsNotCorrectException();
         }
+    }
+
+    @Override
+    public void loginOrRegist(LoginOrRegistFeignVo vo) {
+        Long socialUid = vo.getId();
+        QueryWrapper<MemberEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("social_uid",socialUid);
+        long count = this.count(queryWrapper);
+        if(count>0)
+        {
+            //说明这个社交用户已经绑定过现有的商城用户了,直接返回登录页
+            throw new SocialUserISExistException();
+        }
+        MemberEntity member=new MemberEntity();
+        member.setCreateTime(new Date());
+        member.setUsername(vo.getLogin());
+        member.setNickname(vo.getName());
+        member.setHeader(vo.getAvatar_url());
+        member.setSocialUid(String.valueOf(vo.getId()));
+        this.save(member);
     }
 
     private void checkUsernameUnique(String userName) {
