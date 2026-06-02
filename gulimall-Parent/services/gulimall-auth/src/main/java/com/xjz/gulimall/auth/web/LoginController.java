@@ -131,6 +131,6 @@ public class LoginController {
         }
         //远程调用会员服务的登录或者注册判断方法进行后续业务处理
         R r = memberFeignClient.loginOrRegist(giteeUserDto);
-        return "redirect:http://auth.littleorange.com/login.html";
+        return "redirect:http://littleorange.com";
     }
 }

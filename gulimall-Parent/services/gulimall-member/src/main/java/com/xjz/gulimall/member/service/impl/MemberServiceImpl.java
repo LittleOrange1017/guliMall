@@ -93,6 +93,9 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         member.setNickname(vo.getName());
         member.setHeader(vo.getAvatar_url());
         member.setSocialUid(String.valueOf(vo.getId()));
+        member.setLevelId(1L);
+        member.setIntegration(0);
+        member.setGrowth(0);
         this.save(member);
     }
 
