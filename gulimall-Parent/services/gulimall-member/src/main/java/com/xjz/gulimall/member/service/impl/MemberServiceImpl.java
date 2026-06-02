@@ -48,6 +48,9 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         member.setLevelId(1L);
         BCryptPasswordEncoder passwordEncoder=new BCryptPasswordEncoder();
         String encode = passwordEncoder.encode(vo.getPassword());
+        String[] parts = encode.split("\\$");
+        String salt = parts[3].substring(0, 22);
+        member.setSalt(salt);
         member.setPassword(encode);
         Date date=new Date();
         member.setCreateTime(date);

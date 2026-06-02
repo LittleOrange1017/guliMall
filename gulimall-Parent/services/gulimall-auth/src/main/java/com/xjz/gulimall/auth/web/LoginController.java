@@ -128,7 +128,8 @@ public class LoginController {
         if (giteeUserDto == null || giteeUserDto.getId() == null) {
             return "redirect:http://auth.littleorange.com/login.html";
         }
-        log.info("获取 Gitee 账号资料成功，唯一ID: {}，昵称: {}", giteeUserDto.getId(), giteeUserDto.getName());
+        //远程调用会员服务去存储信息
+
         return "redirect:http://littleorange.com";
     }
 }
