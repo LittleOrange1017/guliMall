@@ -1,26 +1,48 @@
 package com.xjz.gulimall.auth.web;
 
+import com.alibaba.fastjson.JSON;
+import com.xjz.gulimall.auth.config.GiteeOauthProperties;
+import com.xjz.gulimall.auth.dto.GiteeTokenDto;
+import com.xjz.gulimall.auth.dto.GiteeUserDto;
 import com.xjz.gulimall.auth.dto.LoginDto;
 import com.xjz.gulimall.auth.feign.MemberFeignClient;
+import com.xjz.gulimall.auth.vo.GiteeTokenVo;
 import exception.BizCodeEnum;
+import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONUtil;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utils.R;
 
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
+@Slf4j
 public class LoginController {
+    @Autowired
+    private GiteeOauthProperties giteeOauthProperties;
     private final MemberFeignClient memberFeignClient;
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
 
     public LoginController(MemberFeignClient memberFeignClient) {
         this.memberFeignClient = memberFeignClient;
@@ -62,5 +84,51 @@ public class LoginController {
             return "redirect:http://auth.littleorange.com/login.html";
         }
         return "redirect:http://littleorange.com/index.html";
+    }
+    @GetMapping("/success")
+    public String giteeCallback(@RequestParam("code") String code, HttpSession session) throws IOException, InterruptedException {
+        String clientSecret = giteeOauthProperties.getClient_Secret();
+        RestTemplate restTemplate=new RestTemplate();
+        String redirectUri = giteeOauthProperties.getRedirect_uri();
+        String clientId = giteeOauthProperties.getClient_Id();
+        GiteeTokenVo giteeTokenVo=new GiteeTokenVo();
+        giteeTokenVo.setCode(code);
+        giteeTokenVo.setClient_id(clientId);
+        giteeTokenVo.setClient_secret(clientSecret);
+        giteeTokenVo.setGrant_type("authorization_code");
+        giteeTokenVo.setRedirect_uri(redirectUri);
+        String jsonBody = JSON.toJSONString(giteeTokenVo);
+        String url="https://gitee.com/oauth/token";
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(30))
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "MyApp/1.0")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        HttpResponse<String> httpResponse = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+        String body = httpResponse.body();
+        GiteeTokenDto giteeTokenDto = JSON.parseObject(body, GiteeTokenDto.class);
+        //发送第二次GET请求，去获取当前用户的详细资料
+        String accessToken = giteeTokenDto.getAccess_token();
+        if(accessToken==null||accessToken.isEmpty())
+        {
+            return "redirect:http://auth.littleorange.com/login.html";
+        }
+        String userUrl = "https://gitee.com/api/v5/user?access_token=" + accessToken;
+        HttpRequest userReq = HttpRequest.newBuilder()
+                .uri(URI.create(userUrl))
+                .timeout(Duration.ofSeconds(30))
+                .header("User-Agent", "MyApp/1.0")
+                .GET()
+                .build();
+        HttpResponse<String> userHttpResponse = httpClient.send(userReq, HttpResponse.BodyHandlers.ofString());
+        String userBody = userHttpResponse.body();
+        GiteeUserDto giteeUserDto = JSON.parseObject(userBody, GiteeUserDto.class);
+        if (giteeUserDto == null || giteeUserDto.getId() == null) {
+            return "redirect:http://auth.littleorange.com/login.html";
+        }
+        log.info("获取 Gitee 账号资料成功，唯一ID: {}，昵称: {}", giteeUserDto.getId(), giteeUserDto.getName());
+        return "redirect:http://littleorange.com";
     }
 }
