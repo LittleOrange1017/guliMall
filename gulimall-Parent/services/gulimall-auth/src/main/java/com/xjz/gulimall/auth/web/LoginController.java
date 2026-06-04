@@ -7,6 +7,7 @@ import com.xjz.gulimall.auth.dto.GiteeUserDto;
 import com.xjz.gulimall.auth.dto.LoginDto;
 import com.xjz.gulimall.auth.feign.MemberFeignClient;
 import com.xjz.gulimall.auth.vo.GiteeTokenVo;
+import vo.MemberVo;
 import exception.BizCodeEnum;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONUtil;
@@ -25,6 +26,7 @@ import utils.R;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.lang.reflect.Member;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -131,6 +133,10 @@ public class LoginController {
         }
         //远程调用会员服务的登录或者注册判断方法进行后续业务处理
         R r = memberFeignClient.loginOrRegist(giteeUserDto);
+        MemberVo memberVo=new MemberVo();
+        memberVo.setAvatar_url(giteeUserDto.getAvatar_url());
+        memberVo.setUsername(giteeUserDto.getLogin());
+        session.setAttribute("loginUser",memberVo);
         return "redirect:http://littleorange.com";
     }
 }

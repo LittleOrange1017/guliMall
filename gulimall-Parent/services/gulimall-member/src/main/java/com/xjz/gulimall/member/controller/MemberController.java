@@ -1,8 +1,10 @@
 package com.xjz.gulimall.member.controller;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
+import com.alibaba.fastjson.JSON;
 import com.xjz.gulimall.member.feign.CouponFeignClient;
 import com.xjz.gulimall.member.vo.LoginFeginVo;
 import com.xjz.gulimall.member.vo.LoginOrRegistFeignVo;

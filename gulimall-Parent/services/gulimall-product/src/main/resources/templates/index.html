@@ -94,18 +94,24 @@
   						</div>
   					</b>
         <ul>
-          <li>
+          <!-- 未登录状态 -->
+          <li th:if="${loginUser == null}">
             <a href="http://auth.littleorange.com/login">你好，请登录</a>
           </li>
-          <li>
+          <li th:if="${loginUser == null}">
             <a href="http://auth.littleorange.com/reg" class="li_2">免费注册</a>
+          </li>
+          <!-- 已登录状态 -->
+          <li th:if="${loginUser != null}">
+            <a href="/static/#">
+              <img th:src="${loginUser.avatar_url}" style="width: 20px;height: 20px;border-radius: 50;">
+              <span th:text="'欢迎, ' + ${loginUser.username}">欢迎</span>
+            </a>
           </li>
           <span>|</span>
           <li>
             <a href="/static/#">我的订单</a>
           </li>
-
-
         </ul>
       </div>
     </div>
@@ -236,15 +242,28 @@
         </div>
         <div class="header_main_right">
           <div class="header_main_right_user">
-            <div class="user_info">
+            <!-- 未登录状态 -->
+            <div class="user_info" th:if="${loginUser == null}">
               <div class="user_info_tou">
                 <a href="/static/#"><img class="" src="/static/index/img/touxiang.png"></a>
               </div>
               <div class="user_info_show">
                 <p class="">Hi, 欢迎来到!</p>
                 <p>
-                  <a href="/static/#" class="">登录</a>
-                  <a href="/static/#" class="">注册</a>
+                  <a href="http://auth.littleorange.com/login" class="">登录</a>
+                  <a href="http://auth.littleorange.com/reg" class="">注册</a>
+                </p>
+              </div>
+            </div>
+            <!-- 已登录状态 -->
+            <div class="user_info" th:if="${loginUser != null}">
+              <div class="user_info_tou">
+                <a href="/static/#"><img class="" th:src="${loginUser.avatar_url}"></a>
+              </div>
+              <div class="user_info_show">
+                <p class="" th:text="'Hi, ' + ${loginUser.username} + '!'">Hi, 欢迎来到!</p>
+                <p>
+                  <a href="/static/#" class="">我的账户</a>
                 </p>
               </div>
             </div>
