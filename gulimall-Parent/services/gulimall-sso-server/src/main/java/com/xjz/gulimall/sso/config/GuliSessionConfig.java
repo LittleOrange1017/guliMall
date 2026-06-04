@@ -1,10 +1,9 @@
-package com.xjz.gulimall.auth.config;
+package com.xjz.gulimall.sso.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 
@@ -13,8 +12,8 @@ public class GuliSessionConfig {
     @Bean
     public CookieSerializer cookieSerializer(){
         DefaultCookieSerializer defaultCookieSerializer=new DefaultCookieSerializer();
-        defaultCookieSerializer.setDomainName("littleorange.com");
-        defaultCookieSerializer.setCookieName("GULISESSION");
+        defaultCookieSerializer.setDomainName("sso-server.com");
+        defaultCookieSerializer.setCookieName("SSOSESSION");
         return defaultCookieSerializer;
     }
 

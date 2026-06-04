@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>谷粒办公系统 - 内部员工列表</title>
+</head>
+<body>
+<h1>欢迎来到谷粒办公系统！</h1>
+<h3>当前登录用户：<span th:text="${session.loginUser != null ? session.loginUser : '未登录'}">匿名</span></h3>
+
+<ul>
+    <li>员工：张三 (开发部)</li>
+    <li>员工：李四 (测试部)</li>
+</ul>
+</body>
+</html>

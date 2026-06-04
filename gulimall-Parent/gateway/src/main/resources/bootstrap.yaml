@@ -60,3 +60,7 @@ spring:
           uri: lb://service-auth
           predicates:
             - Host=auth.littleorange.com
+        - id: cart_route
+          uri: lb://service-cart
+          predicates:
+            - Host=cart.littleorange.com

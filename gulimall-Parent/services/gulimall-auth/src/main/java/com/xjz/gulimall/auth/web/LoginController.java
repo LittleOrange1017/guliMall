@@ -55,7 +55,7 @@ public class LoginController {
         return "login";
     }
     @PostMapping("/login")
-    public String login(@Valid LoginDto loginDto, BindingResult result, RedirectAttributes redirectAttributes)
+    public String login(@Valid LoginDto loginDto, BindingResult result,HttpSession session, RedirectAttributes redirectAttributes)
     {
         if(result.hasErrors())
         {
@@ -84,6 +84,13 @@ public class LoginController {
             redirectAttributes.addFlashAttribute("errors",errors);
             redirectAttributes.addFlashAttribute("dto",loginDto);
             return "redirect:http://auth.littleorange.com/login.html";
+        }
+        MemberVo memberVo=new MemberVo();
+        if(loginResult.get("code").equals(0))
+        {
+           String memberJSON=loginResult.get("msg").toString();
+            MemberVo vo = JSON.parseObject(memberJSON, MemberVo.class);
+            session.setAttribute("loginUser",vo);
         }
         return "redirect:http://littleorange.com/index.html";
     }

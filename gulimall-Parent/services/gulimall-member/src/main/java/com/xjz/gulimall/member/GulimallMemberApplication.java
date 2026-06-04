@@ -14,7 +14,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  * @Create 2026/3/11 13:38
  * @Version 1.0
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class
+})
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.xjz.gulimall.member.feign")
 public class GulimallMemberApplication {

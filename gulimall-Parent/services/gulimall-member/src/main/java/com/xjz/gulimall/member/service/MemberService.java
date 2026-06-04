@@ -22,7 +22,7 @@ public interface MemberService extends IService<MemberEntity> {
 
     void regist(RegFeignVo regFeignVo);
 
-    void login(LoginFeginVo vo);
+    MemberEntity login(LoginFeginVo vo);
 
     void loginOrRegist(LoginOrRegistFeignVo vo);
 }

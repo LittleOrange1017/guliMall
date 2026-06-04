@@ -13,7 +13,9 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * @Create 2026/3/27 10:58
  * @Version 1.0
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class
+})
 @EnableDiscoveryClient
 public class GuliMallThirdPartyApplication {
     public static void main(String[] args) {

@@ -16,7 +16,7 @@ import com.xjz.gulimall.member.entity.MemberEntity;
 import com.xjz.gulimall.member.service.MemberService;
 import utils.PageUtils;
 import utils.R;
-
+import vo.MemberVo;
 
 
 /**
@@ -112,8 +112,12 @@ public class MemberController {
     @PostMapping("/login")
     public R login(@RequestBody LoginFeginVo vo)
     {
-        memberService.login(vo);
-        return R.ok();
+        MemberEntity memberEntity = memberService.login(vo);
+        MemberVo memberVo=new MemberVo();
+        memberVo.setUsername(memberEntity.getUsername());
+        memberVo.setAvatar_url(memberEntity.getHeader());
+        memberVo.setUserId(memberEntity.getId());
+        return R.ok(JSON.toJSONString(memberVo));
     }
     @PostMapping("/loginOrRegist")
     public R loginOrRegist(@RequestBody LoginOrRegistFeignVo vo){

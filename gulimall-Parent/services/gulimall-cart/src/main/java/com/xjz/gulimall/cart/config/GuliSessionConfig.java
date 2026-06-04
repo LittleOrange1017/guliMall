@@ -1,4 +1,4 @@
-package com.xjz.gulimall.auth.config;
+package com.xjz.gulimall.cart.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,7 +7,6 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
-
 @Configuration
 public class GuliSessionConfig {
     @Bean

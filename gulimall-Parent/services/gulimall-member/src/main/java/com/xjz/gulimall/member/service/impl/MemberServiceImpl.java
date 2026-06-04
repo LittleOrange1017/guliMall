@@ -44,6 +44,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         member.setMobile(vo.getPhone());
         member.setNickname(vo.getUserName());
         member.setLevelId(1L);
+        member.setHeader("https://gulimall-bylittleorange.oss-cn-beijing.aliyuncs.com/2026-05-15/nanjing-university-of-posts-and-telecommunications-logo-1024px.png");
         BCryptPasswordEncoder passwordEncoder=new BCryptPasswordEncoder();
         String encode = passwordEncoder.encode(vo.getPassword());
         String[] parts = encode.split("\\$");
@@ -56,7 +57,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
     }
 
     @Override
-    public void login(LoginFeginVo vo) {
+    public MemberEntity login(LoginFeginVo vo) {
         String password = vo.getPassword();
         String loginacct = vo.getLoginacct();
         MemberEntity entity = this.getOne(new QueryWrapper<MemberEntity>()
@@ -74,6 +75,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         {
             throw new PassWordIsNotCorrectException();
         }
+        return entity;
     }
 
     @Override

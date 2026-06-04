@@ -18,6 +18,10 @@
         <module>gulimall-thirdParty</module>
         <module>gulimall-search</module>
         <module>gulimall-auth</module>
+        <module>gulimall-sso-server</module>
+        <module>gulimall-productB</module>
+        <module>gulimall-productA</module>
+        <module>gulimall-cart</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>
