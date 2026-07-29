@@ -1,7 +1,9 @@
 package com.xjz.gulimall.cart.web;
 
+import com.xjz.gulimall.cart.interceptor.CartInterceptor;
 import com.xjz.gulimall.cart.service.CartService;
 import com.xjz.gulimall.cart.vo.CartItem;
+import com.xjz.gulimall.cart.vo.UserInfoTo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,10 +32,11 @@ public class CartWeb {
      */
     @GetMapping("/addToCartSuccess.html")
     public String addToCartSuccessPage(@RequestParam("skuId") String skuId, Model model) {
-
+        UserInfoTo userInfoTo = CartInterceptor.threadLocal.get();
         // 从 Redis 查询出刚刚加入的购物项数据
         CartItem item = cartService.getCartItem(skuId);
         model.addAttribute("item", item);
+        model.addAttribute("userInfo",userInfoTo);
         return "success"; // 渲染 success.html 页面
     }
 }

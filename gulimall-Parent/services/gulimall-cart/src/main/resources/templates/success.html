@@ -25,10 +25,21 @@
         </ul>
 
         <ul class="hd_wrap_right">
-        <li class="forel">
-        <a href="/javascript:;" class="link_login">你好,请登录</a>&nbsp;
-    <a href="/javascript:;" class="link_regist">免费注册</a>
-        </li>
+            <!-- 未登录状态：userInfo.userId == null -->
+            <li th:if="${userInfo.userId == null}">
+                <a href="http://auth.littleorange.com/login.html" style="color: red;">你好，请登录</a>
+            </li>
+            <li th:if="${userInfo.userId == null}">
+                <a href="http://auth.littleorange.com/reg.html">免费注册</a>
+            </li>
+
+            <!-- 已登录状态：userInfo.userId != null -->
+            <li th:if="${userInfo.userId != null}">
+                <a href="javascript:;" style="display: flex; align-items: center; gap: 5px;">
+                    <span th:text="'欢迎，' + ${userInfo.getUserName()}"  style="color: blue;">欢迎</span>
+                    <img th:src="${userInfo.img}" style="width: 22px; height: 22px; border-radius: 50%;">
+                </a>
+            </li>
         <li class="spacer"></li>
 
         <li>
