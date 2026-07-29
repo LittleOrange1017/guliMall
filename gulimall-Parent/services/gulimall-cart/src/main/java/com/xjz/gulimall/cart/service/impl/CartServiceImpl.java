@@ -176,6 +176,23 @@ public class CartServiceImpl implements CartService {
         cartOps.expire(7200L, TimeUnit.SECONDS);
     }
 
+    @Override
+    public void changeItemCount(String skuId, Integer num) {
+        BoundHashOperations<String, Object, Object> cartOps = getCartOps();
+        if (num <= 0) {
+            cartOps.delete(skuId);
+            return;
+        }
+        String str = (String) cartOps.get(skuId);
+        if (StringUtils.isEmpty(str)) {
+            return;
+        }
+        CartItem cartItem = JSON.parseObject(str, CartItem.class);
+        cartItem.setCount(num);
+        cartOps.put(skuId, JSON.toJSONString(cartItem));
+        cartOps.expire(7200L, TimeUnit.SECONDS);
+    }
+
     /**
      * 获取当前用户购物车在Redis中的BoundHashOperations操作对象
      * <p>

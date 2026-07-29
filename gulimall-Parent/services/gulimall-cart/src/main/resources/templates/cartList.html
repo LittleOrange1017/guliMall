@@ -555,30 +555,35 @@
 		})
 		//+
 		$(".One_ShopCon ul li>div:nth-child(2) ol>li:nth-child(4) p:first-child span:last-child").click(function() {
-			var add = $(this).prev("span").html();
+			var add = parseInt($(this).prev("span").html());
 			add++;
 			$(this).prev("span").html(add);
-			//总价
 			var dj = $(this).parent().parent().prev().children(".dj").html().substring(1);
 			var sl = $(this).prev("span").html();
 			$(this).parent().parent().parent().children("li:nth-child(5)").children(".zj").html("￥" + dj * sl + ".00")
-			sumSumPrice();
-
+			var skuId = $(this).parents("ol").find(".check").val();
+			$.post("changeItemCount", "skuId=" + skuId + "&num=" + add, function(data) {
+				sumSumPrice();
+			});
 		})
 		//-
 		$(".One_ShopCon ul li>div:nth-child(2) ol>li:nth-child(4) p:first-child span:first-child").click(function() {
-			var jian = $(this).next("span").html();
+			var jian = parseInt($(this).next("span").html());
 			jian--;
 			if (jian <= 0) {
 				jian = 0;
 			}
 			$(this).next("span").html(jian);
-			//总价
 			var dj = $(this).parent().parent().prev().children(".dj").html().substring(1);
 			var sl = $(this).next("span").html();
 			$(this).parent().parent().parent().children("li:nth-child(5)").children(".zj").html("￥" + dj * sl + ".00")
-			sumSumPrice();
-
+			var skuId = $(this).parents("ol").find(".check").val();
+			$.post("changeItemCount", "skuId=" + skuId + "&num=" + jian, function(data) {
+				if (jian <= 0) {
+					$(this).closest("li").remove();
+				}
+				sumSumPrice();
+			}.bind(this));
 		})
 		//选中当前商品背景变色
 		$(".check").each(function(index) {

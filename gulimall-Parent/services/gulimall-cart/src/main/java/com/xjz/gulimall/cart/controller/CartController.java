@@ -37,4 +37,11 @@ public class CartController {
         cartService.checkCartItem(skuId, isChecked);
         return R.ok();
     }
+
+    @ResponseBody
+    @PostMapping("/changeItemCount")
+    public R changeItemCount(@RequestParam("skuId") String skuId, @RequestParam("num") Integer num) {
+        cartService.changeItemCount(skuId, num);
+        return R.ok();
+    }
 }
