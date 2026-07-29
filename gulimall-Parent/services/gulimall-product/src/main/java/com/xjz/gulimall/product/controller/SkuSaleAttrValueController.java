@@ -1,6 +1,7 @@
 package com.xjz.gulimall.product.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.xjz.gulimall.product.entity.SkuSaleAttrValueEntity;
 import com.xjz.gulimall.product.service.SkuSaleAttrValueService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,9 @@ import utils.PageUtils;
 import utils.R;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -79,6 +82,17 @@ public class SkuSaleAttrValueController {
 		skuSaleAttrValueService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
+    }
+    @GetMapping("/skuAttr/{skuId}")
+    public R getSkuSaleAttrValues(@PathVariable("skuId") Long skuId)
+    {
+        List<SkuSaleAttrValueEntity> entities = skuSaleAttrValueService.list(
+                new QueryWrapper<SkuSaleAttrValueEntity>().eq("sku_id", skuId)
+        );
+        List<String> attrList = entities.stream()
+                .map(e -> e.getAttrName() + ":" + e.getAttrValue())
+                .collect(Collectors.toList());
+        return R.ok().put("skuAttr", attrList);
     }
 
 }

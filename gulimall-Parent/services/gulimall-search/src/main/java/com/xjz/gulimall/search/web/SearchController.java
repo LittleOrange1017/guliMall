@@ -10,8 +10,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import vo.MemberVo;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 @Controller
 @Slf4j
@@ -33,6 +35,9 @@ public class SearchController {
         }
         model.addAttribute("result",result);
         model.addAttribute("queryString",queryString);
+        HttpSession session = httpServletRequest.getSession();
+        MemberVo memberVo = (MemberVo)session.getAttribute("loginUser");
+        model.addAttribute("userInfo",memberVo);
         return "list";
     }
 }

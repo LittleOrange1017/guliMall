@@ -28,6 +28,8 @@ public class CartInterceptor implements HandlerInterceptor {
              * 用户已登录，设置UserId
              */
             userInfoTo.setUserId(memberVo.getUserId());
+            userInfoTo.setImg(memberVo.getAvatar_url());
+            userInfoTo.setUserName(memberVo.getUsername());
         }
         /**
          * 用户未登录，检查用户是否第一次来到此网站，换句话说就是检查此次请求有无携带cookie

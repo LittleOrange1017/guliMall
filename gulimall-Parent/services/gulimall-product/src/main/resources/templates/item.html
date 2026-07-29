@@ -46,7 +46,7 @@
 			<!--品牌官方网站-->
 					<div class="min">
 						<ul class="header_ul_left">
-							<li class="glyphicon glyphicon-home"> <a href="/static/item/shouye.html" class="aa">京东首页</a></li>
+							<li class="glyphicon glyphicon-home"> <a href="http://littleorange.com" class="aa">小橘子商城首页</a></li>
 							<li class="glyphicon glyphicon-map-marker"> <a href="/static/item/javascript:;">北京</a>
 								<ol id="beijing">
 									<li style="background: red;"><a href="/static/item/javascript:;" style="color: white;">北京</a></li>
@@ -88,8 +88,21 @@
 							</li>
 						</ul>
 						<ul class="header_ul_right">
-							<li style="border: 0;"><a href="/static/item/../登录页面\index.html" class="aa">你好，请登录</a></li>
-							<li><a href="/static/item/../注册页面\index.html" style="color: red;">免费注册</a> |</li>
+							<!-- 未登录状态：userInfo.userId == null -->
+							<li th:if="${session.loginUser==null}">
+								<a href="http://auth.littleorange.com/login.html" style="color: red;">你好，请登录</a>
+							</li>
+							<li th:if="${session.loginUser==null}">
+								<a href="http://auth.littleorange.com/reg.html">免费注册</a>
+							</li>
+
+							<!-- 已登录状态：userInfo.userId != null -->
+							<li th:if="${session.loginUser!=null}">
+								<a href="javascript:;" style="display: flex; align-items: center; gap: 5px;">
+									<span th:text="'欢迎，' + ${session.loginUser.username}"  style="color: blue;">欢迎</span>
+									<img th:src="${session.loginUser.avatar_url}" style="width: 22px; height: 22px; border-radius: 50%;">
+								</a>
+							</li>
 							<li><a href="/static/item/javascript:;" class="aa">我的订单</a> |</li>
 							<li class="jingdong"><a href="/static/item/javascript:;">我的京东</a><span class="glyphicon glyphicon-menu-down">|</span>
 								<ol class="jingdong_ol">
@@ -284,7 +297,7 @@
 					<div class="nav_top">
 						<div class="nav_top_one"><a href="/static/item/#"><img src="/static/item/img/111.png"/></a></div>
 						<div class="nav_top_two"><input type="text"/><button>搜索</button></div>
-						<div class="nav_top_three"><a href="/static/item/../JD_Shop/One_JDshop.html">我的购物车</a><span class="glyphicon glyphicon-shopping-cart"></span>
+						<div class="nav_top_three"><a href="http://cart.littleorange.com/cart.html">我的购物车</a><span class="glyphicon glyphicon-shopping-cart"></span>
 							<div class="nav_top_three_1">
 								<img src="/static/item/img/44.png"/>购物车还没有商品，赶紧选购吧！
 							</div>
@@ -643,16 +656,16 @@
                         </div>
 						<div class="box-btns clear">
 							<div class="box-btns-one">
-								<input type="text" name="" id="" value="1" />
+								<input type="text" id="skuNum" value="1" />
 								<div class="box-btns-one1">
 
 									<div>
-										<button id="jia">
+										<button type="button" class="btn-jia">
 									+
 									</button>
 									</div>
 									<div>
-										<button id="jian">
+										<button type="button" class="btn-jian">
 										-
 									</button>
 									</div>
@@ -660,8 +673,8 @@
 								</div>
 							</div>
 							<div class="box-btns-two">
-								<a href="/static/item/../商品分类\index.html">
-									立即预约
+								<a id="addToCartBtn" th:href="@{http://cart.littleorange.com/addToCart(skuId=${itemVo.info.getSkuId()},skuNum=1)}">
+									加入购物车
 								</a>
 							</div>
 							<div class="box-btns-three">
@@ -1321,6 +1334,37 @@
                 }
             }
         });
+		$(".btn-jia").click(function () {
+			var num=parseInt($("#skuNum").val());
+			$("#skuNum").val(num+1);
+			updateCartUrl();
+		});
+
+		$(".btn-jian").click(function () {
+			var num=parseInt($("#skuNum").val());
+			if(num>1)
+			{
+				$("#skuNum").val(num-1);
+				updateCartUrl();
+			}
+		});
+
+		$("#skuNum").change(function () {
+			var num=parseInt($("#skuNum").val());
+			if(isNaN(num)||num<1)
+			{
+				$("#skuNum").val(1);
+			}
+			updateCartUrl();
+		});
+
+		function updateCartUrl(){
+			var skuNum=parseInt($("#skuNum").val());
+			var skuId= "[[${itemVo.info.skuId}]]";
+			$("#addToCartBtn").attr("href", "http://cart.littleorange.com/addToCart?skuId=" + skuId + "&skuNum=" + skuNum);
+		}
+
+
     </script>
 
 </html>

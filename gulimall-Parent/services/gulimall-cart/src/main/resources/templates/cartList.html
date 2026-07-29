@@ -18,17 +18,30 @@
 					<ul class="header-left">
 						<li>
 
-							<a href="">首页</a>
+							<a href="http://littleorange.com">首页</a>
 						</li>
 
 					</ul>
 					<ul class="header-right">
-						<li><a href="/static/cart./登录页面\index.html" style="color: red;">你好，请登录</a></li>
-						<li><a href="/static/cart./注册页面\index.html">免费注册</a></li>
-						<li class="spacer"></li>
-						<li><a href="">我的订单</a></li>
-						<li class="spacer"></li>
+						<!-- 未登录状态：userInfo.userId == null -->
+						<li th:if="${userInfo.userId == null}">
+							<a href="http://auth.littleorange.com/login.html" style="color: red;">你好，请登录</a>
+						</li>
+						<li th:if="${userInfo.userId == null}">
+							<a href="http://auth.littleorange.com/reg.html">免费注册</a>
+						</li>
 
+						<!-- 已登录状态：userInfo.userId != null -->
+						<li th:if="${userInfo.userId != null}">
+							<a href="javascript:;" style="display: flex; align-items: center; gap: 5px;">
+								<span th:text="'欢迎，' + ${userInfo.getUserName()}"  style="color: blue;">欢迎</span>
+								<img th:src="${userInfo.img}" style="width: 22px; height: 22px; border-radius: 50%;">
+							</a>
+						</li>
+
+						<li class="spacer"></li>
+						<li><a href="http://order.littleorange.com/orderList.html">我的订单</a></li>
+						<li class="spacer"></li>
 					</ul>
 					<div style="clear: both;"></div>
 				</div>
@@ -44,7 +57,7 @@
 			<div class="one_sousuo">
 				<div class="one_search_top">
 					<div class="one_top_left">
-						<a href="/static/cart./" class="one_left_logo"><img src="img/logo1.jpg"></a>
+						<a href="http://littleorange.com" class="one_left_logo"><img src="/static/cart/img/logo1.jpg"></a>
 						<a href="#" class="one_left_link">购物车</a>
 					</div>
 					<div class="one_top_right">
@@ -52,7 +65,7 @@
 						<input type="button" value="搜索" class="one_right_btn">
 					</div>
 				</div>
-				<div class="one_search_load" th:if="${userId}==null">
+				<div class="one_search_load" th:if="${userInfo.getUserId()}==null">
 					<img src="/static/cart/img/shop_07.jpg" class="one_load_wraing">
 					<span>您还没有登录！登录后购物车的商品将保存到您账号中</span>
 					<a href="#"><input type="button" onclick="login()" value="立即登录" class="one_load_btn"></a>

@@ -64,11 +64,20 @@
             </div>
         </b>
         <ul>
-            <li>
-                <a href="/static/search/#" class="li_2">你好，请登录</a>
+            <!-- 未登录状态：userInfo 为 null 或者 userInfo.userId 为 null -->
+            <li th:if="${userInfo == null || userInfo.userId == null}">
+                <a href="http://auth.littleorange.com/login.html" style="color: red;">你好，请登录</a>
             </li>
-            <li>
-                <a href="/static/search/#">免费注册</a>
+            <li th:if="${userInfo == null || userInfo.userId == null}">
+                <a href="http://auth.littleorange.com/reg.html">免费注册</a>
+            </li>
+
+            <!-- 已登录状态：userInfo 不为 null 且 userInfo.userId 不为 null -->
+            <li th:if="${userInfo != null && userInfo.userId != null}">
+                <a href="javascript:;" style="display: flex; align-items: center; gap: 5px;">
+                    <img th:src="${userInfo.getAvatar_url()}" style="width: 22px; height: 22px; border-radius: 50%;">
+                    <span th:text="'欢迎，' + ${userInfo.getUsername()}" style="color: blue;">欢迎</span>
+                </a>
             </li>
             <span>|</span>
             <li>
@@ -400,7 +409,7 @@
 <!--搜索导航-->
 <div class="header_sous">
     <div class="logo">
-        <a href="http://littleorange.com"><img src="/static/search/./image/logo1.jpg" alt=""></a>
+        <a href="http://littleorange.com"><img src="/static/search/image/logo2.png" alt=""></a>
     </div>
     <div class="header_form">
         <input id="keywordInput" type="text" placeholder="手机" th:value="${param.keyword}" />
@@ -408,7 +417,7 @@
     </div>
     <div class="header_ico">
         <div class="header_gw">
-            <span><a href="/static/search/#">我的购物车</a></span>
+            <span><a href="http://cart.littleorange.com/cart.html">我的购物车</a></span>
             <img src="/static/search/image/settleup-@1x.png" />
             <span>0</span>
         </div>

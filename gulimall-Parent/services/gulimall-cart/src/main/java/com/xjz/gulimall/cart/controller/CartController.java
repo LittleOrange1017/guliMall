@@ -16,8 +16,8 @@ public class CartController {
     public String cartListPage(Model model)
     {
         UserInfoTo userInfoTo = CartInterceptor.threadLocal.get();
-        log.info("【购物车服务】当前访问用户身份标识：userId={}, userKey={}",
-                userInfoTo.getUserId(), userInfoTo.getUserKey());
+        model.addAttribute("userInfo",userInfoTo);
+
         return "cartList";
     }
 }
