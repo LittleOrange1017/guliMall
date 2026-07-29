@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import utils.R;
 
 import javax.servlet.http.HttpSession;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -42,6 +45,23 @@ public class CartController {
     @PostMapping("/changeItemCount")
     public R changeItemCount(@RequestParam("skuId") String skuId, @RequestParam("num") Integer num) {
         cartService.changeItemCount(skuId, num);
+        return R.ok();
+    }
+
+    @ResponseBody
+    @PostMapping("/deleteCartItem")
+    public R deleteCartItem(@RequestParam("skuId") String skuId) {
+        cartService.deleteCartItem(skuId);
+        return R.ok();
+    }
+
+    @ResponseBody
+    @PostMapping("/deleteCartItems")
+    public R deleteCartItems(@RequestParam("skuIds") String skuIds) {
+        List<String> skuIdList = Arrays.stream(skuIds.split(","))
+                .filter(s -> !s.trim().isEmpty())
+                .collect(Collectors.toList());
+        cartService.deleteCartItems(skuIdList);
         return R.ok();
     }
 }

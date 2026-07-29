@@ -4,6 +4,7 @@ import com.xjz.gulimall.cart.vo.Cart;
 import com.xjz.gulimall.cart.vo.CartItem;
 import com.xjz.gulimall.cart.vo.UserInfoTo;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public interface CartService {
@@ -17,4 +18,8 @@ public interface CartService {
     void checkCartItem(String skuId, Integer isChecked);
 
     void changeItemCount(String skuId, Integer num);
+
+    void deleteCartItem(String skuId);
+
+    void deleteCartItems(List<String> skuIds);
 }

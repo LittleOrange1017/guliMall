@@ -193,6 +193,32 @@ public class CartServiceImpl implements CartService {
         cartOps.expire(7200L, TimeUnit.SECONDS);
     }
 
+    @Override
+    public void deleteCartItem(String skuId) {
+        if (StringUtils.isEmpty(skuId)) {
+            return;
+        }
+        BoundHashOperations<String, Object, Object> cartOps = getCartOps();
+        cartOps.delete(skuId);
+        Long size = cartOps.size();
+        if (size != null && size > 0) {
+            cartOps.expire(7200L, TimeUnit.SECONDS);
+        }
+    }
+
+    @Override
+    public void deleteCartItems(List<String> skuIds) {
+        if (skuIds == null || skuIds.isEmpty()) {
+            return;
+        }
+        BoundHashOperations<String, Object, Object> cartOps = getCartOps();
+        cartOps.delete(skuIds.toArray());
+        Long size = cartOps.size();
+        if (size != null && size > 0) {
+            cartOps.expire(7200L, TimeUnit.SECONDS);
+        }
+    }
+
     /**
      * 获取当前用户购物车在Redis中的BoundHashOperations操作对象
      * <p>
