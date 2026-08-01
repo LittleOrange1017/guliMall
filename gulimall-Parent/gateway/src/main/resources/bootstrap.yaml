@@ -64,3 +64,7 @@ spring:
           uri: lb://service-cart
           predicates:
             - Host=cart.littleorange.com
+        - id: order_route
+          uri: lb://service-order
+          predicates:
+            - Host=order.littleorange.com
