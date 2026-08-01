@@ -131,13 +131,22 @@
 						</li>
 					</ul>
 					<ul class="header_ul_right">
-						<li style="border: 0;">
-							<a href="/static/order/detail/denglu.html" class="aa">你好，请登录</a>
+						<!-- 未登录状态：userInfo.userId == null -->
+						<li th:if="${userInfo==null||userInfo.userId == null}">
+							<a href="http://auth.littleorange.com/login.html" style="color: red;">你好，请登录</a>
 						</li>
-						<li>
-							<a href="/static/order/detail/javascript:;" style="color: red;">免费注册</a> |</li>
-						<li>
-							<a href="/static/order/detail/javascript:;" class="aa">我的订单</a> |</li>
+						<li th:if="${userInfo==null||userInfo.userId == null}">
+							<a href="http://auth.littleorange.com/reg.html">免费注册</a>
+						</li>
+
+						<!-- 已登录状态：userInfo.userId != null -->
+						<li th:if="${userInfo!=null&&userInfo.userId != null}">
+							<a href="javascript:;" style="display: flex; align-items: center; gap: 5px;">
+								<span th:text="'欢迎，' + ${userInfo.username}"  style="color: blue;">欢迎</span>
+								<img th:src="${userInfo.avatar_url}" style="width: 22px; height: 22px; border-radius: 50%;">
+							</a>
+						</li>
+							<a href="http://order.littleorange.com/list" class="aa">我的订单</a> |</li>
 						<li class="jingdong" style="width:95px;">
 							<a href="/static/order/detail/javascript:;">我的谷粒商城</a><span class="glyphicon glyphicon-menu-down">|</span>
 							<ol class="jingdong_ol">
