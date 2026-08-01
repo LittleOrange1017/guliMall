@@ -11,12 +11,13 @@ import javax.servlet.http.HttpSession;
 
 @Controller
 public class OrderWeb {
-    @GetMapping("/{page}")
+    @GetMapping("/{page:[^\\.]+}")
     public String listPage(HttpServletRequest request,Model model, @PathVariable("page") String page){
-        HttpSession session = request.getSession();
-        MemberVo loginUser = (MemberVo) session.getAttribute("loginUser");
-        model.addAttribute("userInfo",loginUser);
         return page;
+    }
+    @GetMapping("/toTrade")
+    public String toTrade(Model model){
+        return "confirm";
     }
 
 }
