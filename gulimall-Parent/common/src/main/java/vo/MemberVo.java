@@ -12,4 +12,5 @@ public class MemberVo implements Serializable {
      */
     private Long userId;
     private String avatar_url;
+    private Integer integration;
 }

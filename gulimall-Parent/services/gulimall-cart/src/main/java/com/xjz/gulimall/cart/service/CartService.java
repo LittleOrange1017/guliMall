@@ -22,4 +22,6 @@ public interface CartService {
     void deleteCartItem(String skuId);
 
     void deleteCartItems(List<String> skuIds);
+
+    List<CartItem> getUserCartItems(Long id);
 }

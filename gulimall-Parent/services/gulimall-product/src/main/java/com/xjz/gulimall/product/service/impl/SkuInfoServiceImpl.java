@@ -17,6 +17,7 @@ import utils.PageUtils;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -150,5 +151,23 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
                 imageFuture
         ).join();
         return skuItemVo;
+    }
+
+    @Override
+    public Map<Long, BigDecimal> getSkuWeightBySkuIds(List<Long> skuIds) {
+        if(skuIds==null||skuIds.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        List<SkuInfoEntity> skuInfoEntities = this.listByIds(skuIds);
+        List<Long> spuIds = skuInfoEntities.stream().map(SkuInfoEntity::getSpuId).distinct().collect(Collectors.toList());
+        List<SpuInfoEntity> spuInfoEntities = spuInfoService.listByIds(spuIds);
+        Map<Long, BigDecimal> spuWeightMap = spuInfoEntities.stream().collect((Collectors.toMap(SpuInfoEntity::getId, SpuInfoEntity::getWeight)));
+        Map<Long, BigDecimal> skuWeightMap = new HashMap<>();
+        for(SkuInfoEntity sku:skuInfoEntities)
+        {
+            skuWeightMap.put(sku.getSkuId(),spuWeightMap.getOrDefault(sku.getSpuId(),BigDecimal.ZERO));
+        }
+        return skuWeightMap;
     }
 }

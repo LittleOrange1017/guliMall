@@ -117,6 +117,7 @@ public class MemberController {
         memberVo.setUsername(memberEntity.getUsername());
         memberVo.setAvatar_url(memberEntity.getHeader());
         memberVo.setUserId(memberEntity.getId());
+        memberVo.setIntegration(memberEntity.getIntegration());
         return R.ok(JSON.toJSONString(memberVo));
     }
     @PostMapping("/loginOrRegist")

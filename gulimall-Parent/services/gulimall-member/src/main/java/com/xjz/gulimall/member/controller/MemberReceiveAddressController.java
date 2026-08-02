@@ -1,7 +1,9 @@
 package com.xjz.gulimall.member.controller;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +30,6 @@ import utils.R;
 public class MemberReceiveAddressController {
     @Autowired
     private MemberReceiveAddressService memberReceiveAddressService;
-
     /**
      * 列表
      */
@@ -83,6 +84,11 @@ public class MemberReceiveAddressController {
 		memberReceiveAddressService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
+    }
+    @RequestMapping("/addressList/{id}")
+    public List<MemberReceiveAddressEntity> addressList(@PathVariable("id") Long id){
+        List<MemberReceiveAddressEntity> addressEntityList = memberReceiveAddressService.getAddressList(id);
+        return addressEntityList;
     }
 
 }

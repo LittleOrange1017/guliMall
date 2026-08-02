@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -217,6 +218,14 @@ public class CartServiceImpl implements CartService {
         if (size != null && size > 0) {
             cartOps.expire(7200L, TimeUnit.SECONDS);
         }
+    }
+
+    @Override
+    public List<CartItem> getUserCartItems(Long id) {
+        String key=CART_PREFIX+id.toString();
+        List<CartItem> cartItems = getCartItems(key);
+        //过滤选中状态为true的
+        return cartItems.stream().filter(cartItem -> cartItem.getCheck()).collect(Collectors.toList());
     }
 
     /**

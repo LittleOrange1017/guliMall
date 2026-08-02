@@ -1,6 +1,8 @@
 package com.xjz.gulimall.member.service.impl;
 
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -25,6 +27,13 @@ public class MemberReceiveAddressServiceImpl extends ServiceImpl<MemberReceiveAd
         );
 
         return new PageUtils(page);
+    }
+
+    @Override
+    public List<MemberReceiveAddressEntity> getAddressList(Long id) {
+        QueryWrapper<MemberReceiveAddressEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("member_id",id);
+        return list(queryWrapper);
     }
 
 }

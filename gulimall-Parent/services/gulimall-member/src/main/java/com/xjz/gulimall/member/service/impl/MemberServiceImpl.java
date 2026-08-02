@@ -51,6 +51,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberDao, MemberEntity> impl
         String salt = parts[3].substring(0, 22);
         member.setSalt(salt);
         member.setPassword(encode);
+        member.setIntegration(0);
         Date date=new Date();
         member.setCreateTime(date);
         this.save(member);

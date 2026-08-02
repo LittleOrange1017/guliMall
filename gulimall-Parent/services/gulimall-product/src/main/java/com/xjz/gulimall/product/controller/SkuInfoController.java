@@ -4,6 +4,7 @@ import com.xjz.gulimall.product.entity.SkuInfoEntity;
 import com.xjz.gulimall.product.service.SkuInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import to.SkuWeightTo;
 import utils.PageUtils;
 import utils.R;
 
@@ -85,4 +86,13 @@ public class SkuInfoController {
         SkuInfoEntity skuInfoEntity=skuInfoService.getSkuInfo(skuId);
         return skuInfoEntity.getPrice();
     }
+
+    @PostMapping("/skuWeight")
+    public Map<Long, BigDecimal> getSkuWeight(@RequestBody SkuWeightTo skuWeightTo)
+    {
+        return skuInfoService.getSkuWeightBySkuIds(skuWeightTo.getSkuIds());
+    }
+
+
+
 }

@@ -3,15 +3,13 @@ package com.xjz.gulimall.cart.controller;
 import com.xjz.gulimall.cart.interceptor.CartInterceptor;
 import com.xjz.gulimall.cart.service.CartService;
 import com.xjz.gulimall.cart.vo.Cart;
+import com.xjz.gulimall.cart.vo.CartItem;
 import com.xjz.gulimall.cart.vo.UserInfoTo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import utils.R;
 
 import javax.servlet.http.HttpSession;
@@ -63,5 +61,12 @@ public class CartController {
                 .collect(Collectors.toList());
         cartService.deleteCartItems(skuIdList);
         return R.ok();
+    }
+
+    @GetMapping("/getUserCartItems/{id}")
+    public List<CartItem> getCartItems(@PathVariable("id") Long id)
+    {
+        return cartService.getUserCartItems(id);
+
     }
 }
