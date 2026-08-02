@@ -8,7 +8,6 @@ import com.xjz.gulimall.order.interceptor.LoginUserInterceptor;
 import com.xjz.gulimall.order.vo.MemberAddressVo;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderItemVo;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +18,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -83,6 +81,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 return cartFeign.getCartItems(memberVo.getUserId());
             }
         }, threadPoolExecutor).thenApplyAsync(orderItemVos -> {
+            if (orderItemVos == null || orderItemVos.isEmpty()) {
+                return orderItemVos;
+            }
             orderConfirmVo.setItems(orderItemVos);
             //远程查询商品项的hasStock
             List<Long> skuIds = orderItemVos.stream().map(orderItemVo -> orderItemVo.getSkuId()).collect(Collectors.toList());
@@ -91,7 +92,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             List<SkuHasStockVo> skuHasStockVoList = wareFeign.getSkuStockBySpuId(skuStockTo);
             if (skuHasStockVoList != null) {
                 Map<Long, Boolean> stockMap = skuHasStockVoList.stream()
-                        .collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
+                        .collect(Collectors.toMap(SkuHasStockVo::getSkuId,
+                                vo -> vo.getHasStock() != null ? vo.getHasStock() : false));
                 orderConfirmVo.setStocks(stockMap);
                 orderItemVos.forEach(item -> item.setHasStock(stockMap.getOrDefault(item.getSkuId(), false)));
             }
