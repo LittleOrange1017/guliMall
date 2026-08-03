@@ -5,6 +5,11 @@
 		<meta charset="utf-8" />
 		<script src="/static/order/confirm/js/jquery-3.1.1.min.js"></script>
 		<link rel="stylesheet" type="text/css" href="/static/order/confirm/css/JD2.css" />
+		<style>
+			.address-item { cursor: pointer; transition: background 0.2s; }
+			.address-item:hover { background: #f5f5f5; }
+			.addr-selected { background: #fff4e8 !important; border: 2px solid #e4393c !important; padding: 8px; }
+		</style>
 
 		<title></title>
 	</head>
@@ -445,17 +450,22 @@
 
 		<!--主体部分-->
 		<p class="p1">填写并核对订单信息</p>
-		<div class="section">
+		<div class="section"
+			 th:with="hasAddr=${orderConfirmData.addresses != null && !orderConfirmData.addresses.isEmpty()},
+					  defaultAddrList=${hasAddr ? orderConfirmData.addresses.?[defaultStatus != null && defaultStatus == 1] : null},
+					  selectedAddr=${hasAddr ? (!defaultAddrList.isEmpty() ? defaultAddrList[0] : orderConfirmData.addresses[0]) : null}">
 			<!--收货人信息-->
 			<div class="top-2">
 				<span>收货人信息</span>
 				<span>新增收货地址</span>
 			</div>
 
-			<!--地址：遍历 orderConfirmData.addresses-->
-			<th:block th:if="${orderConfirmData.addresses != null && !orderConfirmData.addresses.isEmpty()}">
-				<div class="top-3" th:each="addr,iterStat : ${orderConfirmData.addresses}">
-					<p th:text="${addr.defaultStatus != null && addr.defaultStatus == 1 ? '默认地址' : (iterStat.first ? '收货地址' : |地址 ${iterStat.count}|)}">收货地址</p>
+			<!--地址：遍历 orderConfirmData.addresses，点击可选择，data-* 属性供 JS 读取-->
+			<th:block th:if="${hasAddr}">
+				<div class="top-3 address-item" th:each="addr,iterStat : ${orderConfirmData.addresses}"
+					 th:classappend="${selectedAddr != null && addr.id != null && addr.id == selectedAddr.id ? ' addr-selected' : ''}"
+					 th:attr="data-id=${addr.id},data-name=${addr.name},data-province=${addr.province},data-city=${addr.city},data-region=${addr.region},data-detail=${addr.detailAddress},data-phone=${addr.phone}">
+					<p th:text="${addr.defaultStatus != null && addr.defaultStatus == 1 ? '默认地址' : (iterStat.first ? '收货地址' : '地址' + iterStat.count)}">收货地址</p>
 					<span>
 						<span th:text="${addr.name}">收货人</span>&nbsp;&nbsp;
 						<span th:text="${addr.province}">省</span>
@@ -466,7 +476,7 @@
 					</span>
 				</div>
 			</th:block>
-			<div class="top-3" th:if="${orderConfirmData.addresses == null || orderConfirmData.addresses.isEmpty()}">
+			<div class="top-3" th:if="${!hasAddr}">
 				<span style="color: #999999;">暂无收货地址，请先前往会员中心添加收货地址</span>
 			</div>
 			<p class="p2">更多地址︾</p>
@@ -517,7 +527,7 @@
 				<p class="kg" style="color:#666666;margin-top: 13px;font-size: 12px">总重量 :
 					<span style="color:#999999;font-size: 12px" th:if="${orderConfirmData.items == null || orderConfirmData.items.isEmpty()}">0.000kg</span>
 					<span style="color:#999999;font-size: 12px" th:if="${orderConfirmData.items != null && !orderConfirmData.items.isEmpty()}"
-						  th:text="${#numbers.formatDecimal(#aggregates.sum(orderConfirmData.items.![weight != null && count != null ? weight.multiply(T(java.math.BigDecimal).valueOf(count)) : T(java.math.BigDecimal).ZERO]),1,3) + 'kg'}">0.095kg</span>
+						  th:text="${#numbers.formatDecimal(#aggregates.sum(orderConfirmData.items.![weight != null && count != null ? weight.multiply(T(java.math.BigDecimal).valueOf(count.longValue())) : T(java.math.BigDecimal).ZERO]),1,3) + 'kg'}">0.095kg</span>
 				</p>
 			</div>
 			<div class="to_right">
@@ -586,14 +596,14 @@
 					<span>件商品，总商品金额：</span>
 					<span class="rmb">￥<span th:text="${#numbers.formatDecimal(orderConfirmData.total,1,2)}">28.90</span></span>
 				</p>
-				<!--返现/运费/服务费/退换无忧：VO 暂未提供对应字段，先按 ￥0.00 展示，与 getPayPrice()=total 的语义保持一致-->
+				<!--返现/运费/服务费/退换无忧：返现等暂无数据来源；运费由选择收货地址后 AJAX 动态查询更新-->
 				<p class="qian_y">
 					<span>返现：</span>
 					<span class="rmb">  -￥0.00</span>
 				</p>
 				<p class="qian_y">
 					<span>运费： </span>
-					<span class="rmb"> &nbsp ￥0.00</span>
+					<span class="rmb" id="freight-amount"> &nbsp ￥0.00</span>
 				</p>
 				<p class="qian_y">
 					<span>服务费： </span>
@@ -607,16 +617,16 @@
 			</div>
 
 			<div class="yfze">
-				<p class="yfze_a"><span class="z">应付总额：</span><span class="hq">￥<span th:text="${#numbers.formatDecimal(orderConfirmData.payPrice,1,2)}">28.90</span></span></p>
-				<p class="yfze_b" th:if="${orderConfirmData.addresses != null && !orderConfirmData.addresses.isEmpty()}"
-				   th:with="addr=${orderConfirmData.addresses[0]}">
-					寄送至： <span th:text="${addr.province}">省</span> <span th:text="${addr.city}">市</span> <span th:text="${addr.region}">区</span> <span th:text="${addr.detailAddress}">详细地址</span> 收货人：<span th:text="${addr.name}">姓名</span> <span th:text="${addr.phone}">电话</span>
+				<p class="yfze_a"><span class="z">应付总额：</span><span class="hq">￥<span id="pay-price" th:text="${#numbers.formatDecimal(orderConfirmData.payPrice,1,2)}">28.90</span></span></p>
+				<p class="yfze_b" th:if="${hasAddr}" th:with="addr=${selectedAddr}">
+					寄送至： <span id="delivery-province" th:text="${addr.province}">省</span> <span id="delivery-city" th:text="${addr.city}">市</span> <span id="delivery-region" th:text="${addr.region}">区</span> <span id="delivery-detail" th:text="${addr.detailAddress}">详细地址</span> 收货人：<span id="delivery-name" th:text="${addr.name}">姓名</span> <span id="delivery-phone" th:text="${addr.phone}">电话</span>
 				</p>
-				<p class="yfze_b" th:if="${orderConfirmData.addresses == null || orderConfirmData.addresses.isEmpty()}">寄送至： 暂无收货地址，请先添加收货地址</p>
+				<p class="yfze_b" th:if="${!hasAddr}">寄送至： 暂无收货地址，请先添加收货地址</p>
 			</div>
-			<!--防重令牌隐藏域：提交订单时一并提交 orderToken-->
+			<!--防重令牌隐藏域：提交订单时一并提交 orderToken；addrId 为当前选中的收货地址，由 JS 实时更新-->
 			<form method="post" th:action="@{/submitOrder}">
 				<input type="hidden" name="orderToken" th:value="${orderConfirmData.orderToken}" />
+				<input type="hidden" id="selectedAddrId" name="addrId" th:value="${selectedAddr != null ? selectedAddr.id : ''}" />
 				<button class="tijiao" type="submit">提交订单</button>
 			</form>
 		</div>
@@ -824,7 +834,44 @@
 				<img src="/static/order/confirm/img/56a89b8fNfbaade9a.jpg" />
 			</p>
 		</div>
+		<script th:inline="javascript">
+			// 商品总金额：由服务端注入，供 JS 计算应付总额（应付总额 = 商品总金额 + 运费）
+			var goodsTotal = /*[[${orderConfirmData.total}]]*/ 0;
+		</script>
 		<script>
+			// 更新运费展示，并重新计算应付总额（保留两位小数）
+			function updateFreightAndPayPrice(freight) {
+				$('#freight-amount').html('&nbsp; ￥' + freight.toFixed(2));
+				var payPrice = goodsTotal + freight;
+				$('#pay-price').text(payPrice.toFixed(2));
+			}
+
+			// 根据地址ID查询运费并更新页面展示
+			// 请求成功：使用返回的运费更新；请求失败或无数据：运费回退为 0，应付总额等于商品总金额
+			function queryFreight(addrId) {
+				if (!addrId) {
+					return;
+				}
+				$.ajax({
+					url: '/order/order/freight',
+					type: 'GET',
+					data: {addrId: addrId},
+					success: function (res) {
+						var freight = 0;
+						// R.ok() 的 code 为 0，运费字段为 freightAmount
+						if (res && res.code === 0 && res.freightAmount != null) {
+							var parsed = parseFloat(res.freightAmount);
+							freight = isNaN(parsed) ? 0 : parsed;
+						}
+						updateFreightAndPayPrice(freight);
+					},
+					error: function () {
+						// 请求失败：运费回退为 0.00，应付总额等于商品总金额
+						updateFreightAndPayPrice(0);
+					}
+				});
+			}
+
 			$(document).ready(function () {
                 $('.header-right li:nth-of-type(6)').hover(function(){
                     $('.header-r-11').css('display','block')
@@ -851,6 +898,26 @@
                 },function(){
                     $('.h-r-1').css('display','none')
                 })
+                $('.address-item').on('click', function () {
+                    $('.address-item').removeClass('addr-selected');
+                    $(this).addClass('addr-selected');
+                    $('#delivery-province').text($(this).attr('data-province') || '');
+                    $('#delivery-city').text($(this).attr('data-city') || '');
+                    $('#delivery-region').text($(this).attr('data-region') || '');
+                    $('#delivery-detail').text($(this).attr('data-detail') || '');
+                    $('#delivery-name').text($(this).attr('data-name') || '');
+                    $('#delivery-phone').text($(this).attr('data-phone') || '');
+                    $('#selectedAddrId').val($(this).attr('data-id') || '');
+
+                    // 用户手动切换地址时，重新查询运费
+                    queryFreight($(this).attr('data-id'));
+                })
+
+                // 页面加载完成后，自动为默认选中的地址查询一次运费
+                var $defaultAddr = $('.address-item.addr-selected');
+                if ($defaultAddr.length > 0) {
+                    queryFreight($defaultAddr.attr('data-id'));
+                }
             })
 
 

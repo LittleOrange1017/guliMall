@@ -1,8 +1,10 @@
 package com.xjz.gulimall.order.controller;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -82,6 +84,27 @@ public class OrderController {
 		orderService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
+    }
+
+    /**
+     * 运费查询：根据收货地址ID计算当前订单的运费金额
+     * 完整路径：GET /order/order/freight?addrId=xxx
+     * TODO 后续接入真实业务：调用 ware 服务，根据商品总重量与收货地址距离计算运费，当前返回模拟固定值
+     */
+    @GetMapping("/freight")
+    public R freight(@RequestParam("addrId") Long addrId){
+        // 模拟运费金额，待后续替换为真实运费计算逻辑
+        BigDecimal freightAmount=new BigDecimal(0.00);
+        if(addrId.equals(3L))
+        {
+           freightAmount=new BigDecimal("10.00");
+        }
+        else if(addrId.equals(4L))
+        {
+            freightAmount=new BigDecimal("15.00");
+        }
+
+        return R.ok().put("freightAmount", freightAmount);
     }
 
 }
