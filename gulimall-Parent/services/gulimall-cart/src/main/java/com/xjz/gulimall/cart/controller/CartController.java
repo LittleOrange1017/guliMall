@@ -62,7 +62,7 @@ public class CartController {
         cartService.deleteCartItems(skuIdList);
         return R.ok();
     }
-
+    @ResponseBody
     @GetMapping("/getUserCartItems/{id}")
     public List<CartItem> getCartItems(@PathVariable("id") Long id)
     {

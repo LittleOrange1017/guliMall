@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import utils.R;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -224,7 +225,10 @@ public class CartServiceImpl implements CartService {
     public List<CartItem> getUserCartItems(Long id) {
         String key=CART_PREFIX+id.toString();
         List<CartItem> cartItems = getCartItems(key);
-        //过滤选中状态为true的
+        if(cartItems==null||cartItems.isEmpty())
+        {
+            return new ArrayList<>();
+        }
         return cartItems.stream().filter(cartItem -> cartItem.getCheck()).collect(Collectors.toList());
     }
 
