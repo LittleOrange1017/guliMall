@@ -95,7 +95,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 List<OrderItemVo> orderItemVos = cartFeign.getCartItems(memberVo.getUserId());
 
                 if (orderItemVos != null && !orderItemVos.isEmpty()) {
-                    orderConfirmVo.setItems(orderItemVos);
                     List<Long> skuIds = orderItemVos.stream().map(OrderItemVo::getSkuId).collect(Collectors.toList());
 
                     // 2.2 查询商品项库存
@@ -119,6 +118,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                     if (skuWeight != null && !skuWeight.isEmpty()) {
                         orderItemVos.forEach(item -> item.setWeight(skuWeight.getOrDefault(item.getSkuId(), BigDecimal.ZERO)));
                     }
+                    orderConfirmVo.setItems(orderItemVos);
                 }
             } finally {
                 // 【规范】清理子线程 ThreadLocal
