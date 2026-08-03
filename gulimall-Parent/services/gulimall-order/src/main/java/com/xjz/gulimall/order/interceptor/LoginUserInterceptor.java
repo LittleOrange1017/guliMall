@@ -13,14 +13,16 @@ public class LoginUserInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        HttpSession session = request.getSession();
-        MemberVo memberVo = (MemberVo)session.getAttribute("loginUser");
+        HttpSession session = request.getSession(false);
+        MemberVo memberVo = session == null ? null : (MemberVo) session.getAttribute("loginUser");
         if(memberVo!=null&&memberVo.getUserId()!=null)
         {
             loginUser.set(memberVo);
             return true;
         }
-        response.sendRedirect("http://auth.littleorange.com/login");
+        if (!response.isCommitted()) {
+            response.sendRedirect("http://auth.littleorange.com/login");
+        }
         return false;
     }
 

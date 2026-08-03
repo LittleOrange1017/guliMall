@@ -27,8 +27,6 @@ public class OrderWeb {
     public String toTrade(Model model){
         OrderConfirmVo confirmVo=orderService.confirmOrder();
         model.addAttribute("orderConfirmData", confirmVo);
-        String jsonString = JSON.toJSONString(confirmVo);
-        log.info(jsonString);
         return "confirm";
     }
 
