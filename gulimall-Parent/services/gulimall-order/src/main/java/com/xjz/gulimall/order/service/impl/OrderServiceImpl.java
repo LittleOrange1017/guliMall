@@ -255,6 +255,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
             throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
         }
+        //假装这边调用扣减积分消息的服务出异常
+        int i=10/0;
         resVo.setOrder(order);
         resVo.setCode(0);
         resVo.setMsg("下单成功");
