@@ -15,6 +15,7 @@ import vo.MemberVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.math.BigDecimal;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -37,6 +38,18 @@ public class OrderWeb {
     @PostMapping("/submitOrder")
     public OrderSubmitResVo submitOrder(@RequestBody OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException {
         return orderService.submitOrder(orderSubmitDto);
+    }
+
+    @GetMapping("/pay")
+    public String payPage(@RequestParam("orderSn") String orderSn,
+                          @RequestParam("payAmount") String payAmount,
+                          Model model) {
+        if (orderSn == null || payAmount == null) {
+            return "redirect:/toTrade";
+        }
+        model.addAttribute("orderSn", orderSn);
+        model.addAttribute("payAmount", new BigDecimal(payAmount));
+        return "pay";
     }
 
 }
