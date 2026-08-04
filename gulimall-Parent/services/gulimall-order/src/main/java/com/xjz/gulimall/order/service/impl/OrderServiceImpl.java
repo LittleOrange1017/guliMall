@@ -9,14 +9,17 @@ import com.xjz.gulimall.order.vo.MemberAddressVo;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderItemVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -40,6 +43,8 @@ import vo.SkuHasStockVo;
 
 @Service("orderService")
 public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> implements OrderService {
+    @Autowired
+    private StringRedisTemplate redisTemplate;
     @Autowired
     private ThreadPoolExecutor threadPoolExecutor;
     @Autowired
@@ -68,6 +73,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         MemberVo memberVo = LoginUserInterceptor.loginUser.get();
 
         OrderConfirmVo orderConfirmVo = new OrderConfirmVo();
+        //生成防重令牌
+        String uuidToken = UUID.randomUUID().toString().replace("-","");
+        String redisKey="order:token:"+memberVo.getUserId().toString();
+        redisTemplate.opsForValue().set(redisKey,uuidToken,30, TimeUnit.MINUTES);
+        orderConfirmVo.setOrderToken(uuidToken);
         orderConfirmVo.setIntegration(memberVo.getIntegration());
 
         // 任务 1：远程异步查询当前用户的收货地址列表
