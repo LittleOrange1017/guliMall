@@ -177,100 +177,87 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             resVo.setMsg("订单令牌无效或已过期，请刷新页面重新下单");
             return resVo;
         }
-        //创建订单
-        try{
-            OrderEntity order=new OrderEntity();
-            //生成订单号
-            String orderSn = memberVo.getUserId().toString()
-                    + System.currentTimeMillis()
-                    + (int)(Math.random() * 1000);
-            order.setOrderSn(orderSn);
-            order.setMemberId(memberVo.getUserId());
-            order.setMemberUsername(memberVo.getUsername());
-            //获取总商品金额
-            CompletableFuture<List<OrderItemVo>> async = CompletableFuture.supplyAsync(new Supplier<List<OrderItemVo>>() {
-                @Override
-                public List<OrderItemVo> get() {
-                    return cartFeign.getCartItems(memberVo.getUserId());
-                }
-            }, threadPoolExecutor);
-            List<OrderItemVo> orderItemVos = async.get();
-            BigDecimal totalAmount=BigDecimal.ZERO;
+        OrderEntity order=new OrderEntity();
+        String orderSn = memberVo.getUserId().toString()
+                + System.currentTimeMillis()
+                + (int)(Math.random() * 1000);
+        order.setOrderSn(orderSn);
+        order.setMemberId(memberVo.getUserId());
+        order.setMemberUsername(memberVo.getUsername());
+        CompletableFuture<List<OrderItemVo>> async = CompletableFuture.supplyAsync(new Supplier<List<OrderItemVo>>() {
+            @Override
+            public List<OrderItemVo> get() {
+                return cartFeign.getCartItems(memberVo.getUserId());
+            }
+        }, threadPoolExecutor);
+        List<OrderItemVo> orderItemVos = async.get();
+        BigDecimal totalAmount=BigDecimal.ZERO;
+        for(OrderItemVo orderItemVo:orderItemVos)
+        {
+            totalAmount=totalAmount.add(orderItemVo.getTotalPrice());
+        }
+        order.setTotalAmount(totalAmount);
+        order.setPayAmount(orderSubmitDto.getPayPrice());
+        order.setCreateTime(new Date());
+        order.setAutoConfirmDay(7);
+        order.setConfirmStatus(0);
+        order.setDeleteStatus(0);
+        order.setSourceType(0);
+        order.setPayType(orderSubmitDto.getPayType());
+        order.setFreightAmount(BigDecimal.ZERO);
+        order.setPromotionAmount(BigDecimal.ZERO);
+        order.setUseIntegration(0);
+        MemberAddressVo address = memberFeign.addressList(memberVo.getUserId())
+                .stream()
+                .filter(a -> a.getId().equals(orderSubmitDto.getAddrId()))
+                .findFirst()
+                .orElse(null);
+        if (address != null) {
+            order.setReceiverName(address.getName());
+            order.setReceiverPhone(address.getPhone());
+            order.setReceiverPostCode(address.getPostCode());
+            order.setReceiverProvince(address.getProvince());
+            order.setReceiverCity(address.getCity());
+            order.setReceiverRegion(address.getRegion());
+            order.setReceiverDetailAddress(address.getDetailAddress());
+        }
+        this.save(order);
+        List<OrderItemEntity> orderItemEntities=new ArrayList<>();
+        if(orderItemVos!=null)
+        {
             for(OrderItemVo orderItemVo:orderItemVos)
             {
-                totalAmount=totalAmount.add(orderItemVo.getTotalPrice());
+                OrderItemEntity orderItem=new OrderItemEntity();
+                orderItem.setOrderSn(orderSn);
+                orderItem.setSkuId(orderItemVo.getSkuId());
+                orderItem.setRealAmount(orderItemVo.getTotalPrice());
+                orderItem.setOrderId(order.getId());
+                orderItem.setSkuAttrsVals(
+                        orderItemVo.getSkuAttr() != null ? String.join(",", orderItemVo.getSkuAttr()) : null);
+                orderItem.setGiftIntegration(0);
+                orderItem.setGiftGrowth(0);
+                orderItem.setSkuPic(orderItemVo.getImage());
+                orderItem.setSkuName(orderItemVo.getTitle());
+                orderItem.setSkuQuantity(orderItemVo.getCount());
+                orderItemEntities.add(orderItem);
             }
-            order.setTotalAmount(totalAmount);
-            order.setPayAmount(orderSubmitDto.getPayPrice());
-            order.setCreateTime(new Date());
-            order.setAutoConfirmDay(7);
-            order.setConfirmStatus(0);
-            order.setDeleteStatus(0);
-            order.setSourceType(0);
-            order.setPayType(orderSubmitDto.getPayType());
-            order.setFreightAmount(BigDecimal.ZERO);
-            order.setPromotionAmount(BigDecimal.ZERO);
-            order.setUseIntegration(0);
-            MemberAddressVo address = memberFeign.addressList(memberVo.getUserId())
-                    .stream()
-                    .filter(a -> a.getId().equals(orderSubmitDto.getAddrId()))
-                    .findFirst()
-                    .orElse(null);
-            if (address != null) {
-                order.setReceiverName(address.getName());
-                order.setReceiverPhone(address.getPhone());
-                order.setReceiverPostCode(address.getPostCode());
-                order.setReceiverProvince(address.getProvince());
-                order.setReceiverCity(address.getCity());
-                order.setReceiverRegion(address.getRegion());
-                order.setReceiverDetailAddress(address.getDetailAddress());
-            }
-            this.save(order);
-            //保存订单商品入库
-            List<OrderItemEntity> orderItemEntities=new ArrayList<>();
-            if(orderItemVos!=null)
-            {
-                for(OrderItemVo orderItemVo:orderItemVos)
-                {
-                    OrderItemEntity orderItem=new OrderItemEntity();
-                    orderItem.setOrderSn(orderSn);
-                    orderItem.setSkuId(orderItemVo.getSkuId());
-                    orderItem.setRealAmount(orderItemVo.getTotalPrice());
-                    orderItem.setOrderId(order.getId());
-                    orderItem.setSkuAttrsVals(
-                            orderItemVo.getSkuAttr() != null ? String.join(",", orderItemVo.getSkuAttr()) : null);
-                    orderItem.setGiftIntegration(0);
-                    orderItem.setGiftGrowth(0);
-                    orderItem.setSkuPic(orderItemVo.getImage());
-                    orderItem.setSkuName(orderItemVo.getTitle());
-                    orderItem.setSkuQuantity(orderItemVo.getCount());
-                    orderItemEntities.add(orderItem);
-                }
-                orderItemService.saveBatch(orderItemEntities);
-            }
-            //锁定库存
-            OrderStockTo orderStockTo=new OrderStockTo();
-            orderStockTo.setOrderSn(orderSn);
-            orderStockTo.setLocks(orderItemVos.stream().map(item -> {
-                SkuStockLockedTo locked = new SkuStockLockedTo();
-                locked.setSkuId(item.getSkuId());
-                locked.setSkuNum(item.getCount());
-                return locked;
-            }).collect(Collectors.toList()));
-            R lockResult = wareFeign.lockStock(orderStockTo);
-            if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
-                throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
-            }
-            resVo.setOrder(order);
-            resVo.setCode(0);
-            resVo.setMsg("下单成功");
-            return resVo;
-
-        } catch (Exception e) {
-            log.error("订单创建失败", e);
-            resVo.setCode(3);
-            resVo.setMsg("订单创建失败：" + e.getMessage());
-            return resVo;
+            orderItemService.saveBatch(orderItemEntities);
         }
+        OrderStockTo orderStockTo=new OrderStockTo();
+        orderStockTo.setOrderSn(orderSn);
+        orderStockTo.setLocks(orderItemVos.stream().map(item -> {
+            SkuStockLockedTo locked = new SkuStockLockedTo();
+            locked.setSkuId(item.getSkuId());
+            locked.setSkuNum(item.getCount());
+            return locked;
+        }).collect(Collectors.toList()));
+        R lockResult = wareFeign.lockStock(orderStockTo);
+        if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
+            throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
+        }
+        resVo.setOrder(order);
+        resVo.setCode(0);
+        resVo.setMsg("下单成功");
+        return resVo;
     }
 }

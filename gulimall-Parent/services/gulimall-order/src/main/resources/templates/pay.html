@@ -11,7 +11,7 @@
       <div class="Jdbox_head">
         <img src="/static/order/pay/img\logo1.jpg" alt=""><span class="bank">收银台</span>
         <ul>
-          <li><span th:text="'欢迎，' + ${userInfo.username}"  style="color: blue;"></span><span>  退出</span></li>
+          <li><span th:text="'欢迎，' + ${(session.loginUser != null) ? session.loginUser.username : ''}" style="color: blue;"></span><span>  退出</span></li>
           <li>我的订单</li>
           <li>支付帮助</li>
         </ul>

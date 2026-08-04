@@ -36,8 +36,16 @@ public class OrderWeb {
 
     @ResponseBody
     @PostMapping("/submitOrder")
-    public OrderSubmitResVo submitOrder(@RequestBody OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException {
-        return orderService.submitOrder(orderSubmitDto);
+    public OrderSubmitResVo submitOrder(@RequestBody OrderSubmitDto orderSubmitDto) {
+        try {
+            return orderService.submitOrder(orderSubmitDto);
+        } catch (Exception e) {
+            log.error("订单创建失败", e);
+            OrderSubmitResVo resVo = new OrderSubmitResVo();
+            resVo.setCode(3);
+            resVo.setMsg("订单创建失败：" + e.getMessage());
+            return resVo;
+        }
     }
 
     @GetMapping("/pay")
