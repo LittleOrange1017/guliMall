@@ -20,7 +20,7 @@
         <dl>
           <dt><img src="/static/order/pay/img\saoyisao.png" alt=""></dt>
           <dd>
-            <span>订单提交成功，请尽快付款！订单号：<span th:text="${orderSn}">70715901829</span></span>
+            <span th:inline="text">订单提交成功，请尽快付款！订单号：[[${orderSn}]]</span>
             <span>应付金额<font th:text="${#numbers.formatDecimal(payAmount,1,2)}">28.90</font>元</span>
           </dd>
           <dd>

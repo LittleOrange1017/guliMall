@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.transaction.annotation.Transactional;
 import to.OrderStockTo;
 import to.SkuStockLockedTo;
 import to.SkuStockTo;
@@ -78,6 +79,7 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
     }
 
     @Override
+    @Transactional
     public void lockStock(OrderStockTo orderStockTo) {
         for (SkuStockLockedTo lock : orderStockTo.getLocks()) {
             int rows = wareSkuDao.lockStock(lock.getSkuId(), lock.getSkuNum());
@@ -86,7 +88,6 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
                 throw new RuntimeException("商品SKU[" + lock.getSkuId() + "]库存不足，锁定失败");
             }
         }
-
     }
 
 }
