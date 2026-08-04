@@ -906,7 +906,7 @@
 						data: JSON.stringify(orderData),
 						success: function (res) {
 							if (res && res.code === 0 && res.order) {
-								window.location.href = '/pay?orderSn=' + encodeURIComponent(res.order.orderSn);
+								window.location.href = '/pay?orderSn=' + encodeURIComponent(res.order.orderSn) + '&payAmount=' + encodeURIComponent(res.order.payAmount);
 							} else {
 								alert(res.msg || '订单创建失败，请重试');
 								$submitBtn.prop('disabled', false).text('提交订单');
