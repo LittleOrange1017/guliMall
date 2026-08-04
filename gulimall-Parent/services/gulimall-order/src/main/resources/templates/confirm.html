@@ -624,7 +624,7 @@
 				<p class="yfze_b" th:if="${!hasAddr}">寄送至： 暂无收货地址，请先添加收货地址</p>
 			</div>
 			<!--防重令牌隐藏域：提交订单时一并提交 orderToken；addrId 为当前选中的收货地址，由 JS 实时更新-->
-			<form method="post" th:action="@{/submitOrder}">
+			<form id="orderSubmitForm">
 				<input type="hidden" name="orderToken" th:value="${orderConfirmData.orderToken}" />
 				<input type="hidden" id="selectedAddrId" name="addrId" th:value="${selectedAddr != null ? selectedAddr.id : ''}" />
 				<button class="tijiao" type="submit">提交订单</button>
@@ -873,6 +873,47 @@
 			}
 
 			$(document).ready(function () {
+				$('#orderSubmitForm').on('submit', function (e) {
+					e.preventDefault();
+
+					var addrId = $('#selectedAddrId').val();
+					if (!addrId) {
+						alert('请选择收货地址');
+						return;
+					}
+
+					var payPriceText = $('#pay-price').text();
+					var payPrice = parseFloat(payPriceText);
+					if (isNaN(payPrice)) {
+						alert('应付金额异常，请刷新页面重试');
+						return;
+					}
+
+					var orderData = {
+						addrId: addrId,
+						payType: 1,
+						orderToken: $('input[name="orderToken"]').val(),
+						payPrice: payPrice
+					};
+
+					$.ajax({
+						url: '/submitOrder',
+						type: 'POST',
+						contentType: 'application/json',
+						data: JSON.stringify(orderData),
+						success: function (res) {
+							if (res && res.code === 0) {
+								window.location.href = '/pay.html';
+							} else {
+								alert(res.msg || '订单创建失败，请重试');
+							}
+						},
+						error: function () {
+							alert('订单创建失败，请稍后重试');
+						}
+					});
+				});
+
                 $('.header-right li:nth-of-type(6)').hover(function(){
                     $('.header-r-11').css('display','block')
                 },function(){

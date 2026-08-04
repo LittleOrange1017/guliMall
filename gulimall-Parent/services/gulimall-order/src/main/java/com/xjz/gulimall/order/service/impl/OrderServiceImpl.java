@@ -1,5 +1,6 @@
 package com.xjz.gulimall.order.service.impl;
 
+import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.feign.CartFeign;
 import com.xjz.gulimall.order.feign.MemberFeign;
 import com.xjz.gulimall.order.feign.ProductFeign;
@@ -140,5 +141,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         CompletableFuture.allOf(getAddressTask, getCartItemsTask).join();
 
         return orderConfirmVo;
+    }
+
+    @Override
+    public void submitOrder(OrderSubmitDto orderSubmitDto) {
+
     }
 }

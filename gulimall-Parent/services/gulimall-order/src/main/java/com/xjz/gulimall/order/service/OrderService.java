@@ -1,6 +1,7 @@
 package com.xjz.gulimall.order.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import utils.PageUtils;
 import com.xjz.gulimall.order.entity.OrderEntity;
@@ -19,5 +20,7 @@ public interface OrderService extends IService<OrderEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     OrderConfirmVo confirmOrder();
+
+    void submitOrder(OrderSubmitDto orderSubmitDto);
 }
 
