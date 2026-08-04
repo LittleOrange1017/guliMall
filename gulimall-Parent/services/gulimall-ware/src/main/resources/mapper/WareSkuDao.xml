@@ -15,6 +15,12 @@
     <insert id="addStock">
         update wms_ware_sku set stock=stock+#{skuNum} where sku_id=#{skuId} and ware_id=#{wareId}
     </insert>
+    <update id="lockStock">
+        update wms_ware_sku
+        set stock_locked = stock_locked + #{skuNum}
+        where sku_id = #{skuId}
+          and stock - stock_locked >= #{skuNum}
+    </update>
 
 
 </mapper>

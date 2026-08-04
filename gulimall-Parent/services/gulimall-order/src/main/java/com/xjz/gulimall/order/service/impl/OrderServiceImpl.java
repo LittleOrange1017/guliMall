@@ -1,24 +1,27 @@
 package com.xjz.gulimall.order.service.impl;
 
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
+import com.xjz.gulimall.order.entity.OrderItemEntity;
 import com.xjz.gulimall.order.feign.CartFeign;
 import com.xjz.gulimall.order.feign.MemberFeign;
 import com.xjz.gulimall.order.feign.ProductFeign;
 import com.xjz.gulimall.order.feign.WareFeign;
 import com.xjz.gulimall.order.interceptor.LoginUserInterceptor;
+import com.xjz.gulimall.order.service.OrderItemService;
 import com.xjz.gulimall.order.vo.MemberAddressVo;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderItemVo;
+import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import org.junit.platform.commons.function.Try;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -30,6 +33,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import to.OrderStockTo;
+import to.SkuStockLockedTo;
 import to.SkuStockTo;
 import to.SkuWeightTo;
 import utils.PageUtils;
@@ -38,6 +43,7 @@ import utils.Query;
 import com.xjz.gulimall.order.dao.OrderDao;
 import com.xjz.gulimall.order.entity.OrderEntity;
 import com.xjz.gulimall.order.service.OrderService;
+import utils.R;
 import vo.MemberVo;
 import vo.SkuHasStockVo;
 
@@ -56,6 +62,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private WareFeign wareFeign;
     @Autowired
     private ProductFeign productFeign;
+    @Autowired
+    private OrderItemService orderItemService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -144,7 +152,123 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     }
 
     @Override
-    public void submitOrder(OrderSubmitDto orderSubmitDto) {
+    public OrderSubmitResVo submitOrder(OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException {
+        MemberVo memberVo = LoginUserInterceptor.loginUser.get();
+        OrderSubmitResVo resVo=new OrderSubmitResVo();
+        //验证token
+        String orderToken = orderSubmitDto.getOrderToken();
+        String redisKey="order:token:"+memberVo.getUserId().toString();
+        //lua脚本
+        String luaScript =
+                "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                        "    return redis.call('del', KEYS[1]) " +
+                        "else " +
+                        "    return 0 " +
+                        "end";
+        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+        redisScript.setScriptText(luaScript);
+        redisScript.setResultType(Long.class);
+        Long result = redisTemplate.execute(redisScript, Collections.singletonList(redisKey), orderToken);
+        if(result==null||result!=1L)
+        {
+            resVo.setCode(1);
+            resVo.setMsg("订单令牌无效或已过期，请刷新页面重新下单");
+            return resVo;
+        }
+        //创建订单
+        try{
+            OrderEntity order=new OrderEntity();
+            //生成订单号
+            String orderSn = memberVo.getUserId().toString()
+                    + System.currentTimeMillis()
+                    + (int)(Math.random() * 1000);
+            order.setOrderSn(orderSn);
+            order.setMemberId(memberVo.getUserId());
+            order.setMemberUsername(memberVo.getUsername());
+            //获取总商品金额
+            CompletableFuture<List<OrderItemVo>> async = CompletableFuture.supplyAsync(new Supplier<List<OrderItemVo>>() {
+                @Override
+                public List<OrderItemVo> get() {
+                    return cartFeign.getCartItems(memberVo.getUserId());
+                }
+            }, threadPoolExecutor);
+            List<OrderItemVo> orderItemVos = async.get();
+            BigDecimal totalAmount=BigDecimal.ZERO;
+            for(OrderItemVo orderItemVo:orderItemVos)
+            {
+                totalAmount=totalAmount.add(orderItemVo.getTotalPrice());
+            }
+            order.setTotalAmount(totalAmount);
+            order.setPayAmount(orderSubmitDto.getPayPrice());
+            order.setCreateTime(new Date());
+            order.setAutoConfirmDay(7);
+            order.setConfirmStatus(0);
+            order.setDeleteStatus(0);
+            order.setSourceType(0);
+            order.setPayType(orderSubmitDto.getPayType());
+            order.setFreightAmount(BigDecimal.ZERO);
+            order.setPromotionAmount(BigDecimal.ZERO);
+            order.setUseIntegration(0);
+            MemberAddressVo address = memberFeign.addressList(memberVo.getUserId())
+                    .stream()
+                    .filter(a -> a.getId().equals(orderSubmitDto.getAddrId()))
+                    .findFirst()
+                    .orElse(null);
+            if (address != null) {
+                order.setReceiverName(address.getName());
+                order.setReceiverPhone(address.getPhone());
+                order.setReceiverPostCode(address.getPostCode());
+                order.setReceiverProvince(address.getProvince());
+                order.setReceiverCity(address.getCity());
+                order.setReceiverRegion(address.getRegion());
+                order.setReceiverDetailAddress(address.getDetailAddress());
+            }
+            this.save(order);
+            //保存订单商品入库
+            List<OrderItemEntity> orderItemEntities=new ArrayList<>();
+            if(orderItemVos!=null)
+            {
+                for(OrderItemVo orderItemVo:orderItemVos)
+                {
+                    OrderItemEntity orderItem=new OrderItemEntity();
+                    orderItem.setOrderSn(orderSn);
+                    orderItem.setSkuId(orderItemVo.getSkuId());
+                    orderItem.setRealAmount(orderItemVo.getTotalPrice());
+                    orderItem.setOrderId(order.getId());
+                    orderItem.setSkuAttrsVals(
+                            orderItemVo.getSkuAttr() != null ? String.join(",", orderItemVo.getSkuAttr()) : null);
+                    orderItem.setGiftIntegration(0);
+                    orderItem.setGiftGrowth(0);
+                    orderItem.setSkuPic(orderItemVo.getImage());
+                    orderItem.setSkuName(orderItemVo.getTitle());
+                    orderItem.setSkuQuantity(orderItemVo.getCount());
+                    orderItemEntities.add(orderItem);
+                }
+                orderItemService.saveBatch(orderItemEntities);
+            }
+            //锁定库存
+            OrderStockTo orderStockTo=new OrderStockTo();
+            orderStockTo.setOrderSn(orderSn);
+            orderStockTo.setLocks(orderItemVos.stream().map(item -> {
+                SkuStockLockedTo locked = new SkuStockLockedTo();
+                locked.setSkuId(item.getSkuId());
+                locked.setSkuNum(item.getCount());
+                return locked;
+            }).collect(Collectors.toList()));
+            R lockResult = wareFeign.lockStock(orderStockTo);
+            if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
+                throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
+            }
+            resVo.setOrder(order);
+            resVo.setCode(0);
+            resVo.setMsg("下单成功");
+            return resVo;
 
+        } catch (Exception e) {
+            log.error("订单创建失败", e);
+            resVo.setCode(3);
+            resVo.setMsg("订单创建失败：" + e.getMessage());
+            return resVo;
+        }
     }
 }

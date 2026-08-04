@@ -896,20 +896,25 @@
 						payPrice: payPrice
 					};
 
+					var $submitBtn = $('.tijiao');
+					$submitBtn.prop('disabled', true).text('提交中...');
+
 					$.ajax({
 						url: '/submitOrder',
 						type: 'POST',
 						contentType: 'application/json',
 						data: JSON.stringify(orderData),
 						success: function (res) {
-							if (res && res.code === 0) {
-								window.location.href = '/pay.html';
+							if (res && res.code === 0 && res.order) {
+								window.location.href = '/pay?orderSn=' + encodeURIComponent(res.order.orderSn);
 							} else {
 								alert(res.msg || '订单创建失败，请重试');
+								$submitBtn.prop('disabled', false).text('提交订单');
 							}
 						},
 						error: function () {
 							alert('订单创建失败，请稍后重试');
+							$submitBtn.prop('disabled', false).text('提交订单');
 						}
 					});
 				});

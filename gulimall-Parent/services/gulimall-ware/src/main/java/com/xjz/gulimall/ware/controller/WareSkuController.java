@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.xjz.gulimall.ware.entity.WareSkuEntity;
 import com.xjz.gulimall.ware.service.WareSkuService;
+import to.OrderStockTo;
 import to.SkuStockTo;
 import utils.PageUtils;
 import utils.R;
@@ -92,5 +93,16 @@ public class WareSkuController {
     public List<SkuHasStockVo> getSkuStockBySpuId(@RequestBody SkuStockTo skuStockTo){
         return wareSkuService.getSkuStockBySpuId(skuStockTo);
     }
+
+    @PostMapping("/lockStock")
+    public R lockStock(@RequestBody OrderStockTo orderStockTo) {
+        try {
+            wareSkuService.lockStock(orderStockTo);
+            return R.ok();
+        } catch (RuntimeException e) {
+            return R.error(e.getMessage());
+        }
+    }
+
 
 }

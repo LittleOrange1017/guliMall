@@ -3,10 +3,12 @@ package com.xjz.gulimall.order.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
+import com.xjz.gulimall.order.vo.OrderSubmitResVo;
 import utils.PageUtils;
 import com.xjz.gulimall.order.entity.OrderEntity;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 订单
@@ -21,6 +23,6 @@ public interface OrderService extends IService<OrderEntity> {
 
     OrderConfirmVo confirmOrder();
 
-    void submitOrder(OrderSubmitDto orderSubmitDto);
+    OrderSubmitResVo submitOrder(OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException;
 }
 
