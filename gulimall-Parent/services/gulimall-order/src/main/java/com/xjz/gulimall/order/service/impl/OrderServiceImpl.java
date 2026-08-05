@@ -12,6 +12,7 @@ import com.xjz.gulimall.order.vo.MemberAddressVo;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderItemVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.junit.platform.commons.function.Try;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
