@@ -300,4 +300,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             return -1;
         }
     }
+
+    @Override
+    public void releaseOrder(String orderSn) {
+        //根据orderSn查询订单状态
+        Integer orderStatus = getOrderStatus(orderSn);
+        //如果订单状态为待付款---0，就将订单状态设置为已关闭----4
+        if(orderStatus.equals(0))
+        {
+            OrderEntity order = getOne(new QueryWrapper<OrderEntity>().eq("order_sn",orderSn));
+            order.setStatus(4);
+            QueryWrapper<OrderEntity> queryWrapper=new QueryWrapper<>();
+            queryWrapper.eq("order_sn",orderSn).eq("status",0);
+            boolean update = update(order, queryWrapper);
+            if (update) {
+                log.info("关单处理：订单[{}]超时未支付，已关闭", orderSn);
+                // TODO 后续可在此发送订单关闭事件（如释放优惠券等）
+            } else {
+                log.info("关单处理：订单[{}]不存在或已非待付款状态，跳过关单", orderSn);
+            }
+        }
+    }
 }

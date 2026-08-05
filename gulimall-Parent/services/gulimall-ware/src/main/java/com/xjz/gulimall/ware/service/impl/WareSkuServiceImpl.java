@@ -133,7 +133,20 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
         wareOrderTaskDetailService.saveBatch(wareOrderTaskDetailEntities);
     }
 
+    /**
+     * 库存解锁（由 31 分钟延迟消息到期触发）
+     * 流程：
+     * 1、按 order_sn 查工作单，查不到说明数据异常，记录错误并返回（避免消息无限重投）；
+     * 2、只查 lock_status = 1 的明细——幂等核心，已解锁订单查不到待处理明细直接返回；
+     * 3、RPC 反查订单状态决策：
+     *    - 订单不存在(-1) / 已关闭(4)：执行解锁，明细流转为 2 并持久化；
+     *    - 仍待付款(0)：时序竞态，主动抛异常让消息重新入队；
+     *    - 已付款及之后状态(1/2/3)：跳过，不动库存。
+     * 异常说明：待付款抛 RuntimeException、RPC 失败抛 ExecutionException，
+     * 均由监听器捕获后 basicNack 重新入队。
+     */
     @Override
+    @Transactional
     public void unLockStock(OrderStockTo orderStockTo) throws ExecutionException, InterruptedException {
         String orderSn = orderStockTo.getOrderSn();
         WareOrderTaskEntity task = taskService.getOne(new QueryWrapper<WareOrderTaskEntity>().eq("order_sn", orderSn));
@@ -157,14 +170,18 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
             }
         }, threadPoolExecutor);
         R r = async.get();
-        if(r.get("code").equals(500))
-        {
-            //订单状态为已关闭，需要解锁库存
+        Integer status = r == null ? null : (Integer) r.get("status");
+
+        if (status == null || status == -1 || status == 4) {
             for(WareOrderTaskDetailEntity detail:details)
             {
                 wareSkuDao.unlockStock(detail.getSkuId(), detail.getWareId(), detail.getSkuNum());
                 detail.setLockStatus(2);
             }
+            wareOrderTaskDetailService.updateBatchById(details);
+        }
+        else if (status == 0) {
+            throw new RuntimeException("订单[" + orderSn + "]仍为待付款状态，关单流程未完成，消息重新入队等待");
         }
         else
         {

@@ -114,15 +114,8 @@ public class OrderController {
      */
     @GetMapping("/orderSn/{orderSn}")
     public R getOrderStatus(@PathVariable("orderSn") String orderSn){
-       Integer status= orderService.getOrderStatus(orderSn);
-       if(status.equals(4))
-       {
-           return R.error();
-       }
-       else
-       {
-           return R.ok();
-       }
+        Integer status = orderService.getOrderStatus(orderSn);
+        return R.ok().put("status", status);
     }
 
 }

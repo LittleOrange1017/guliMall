@@ -26,5 +26,7 @@ public interface OrderService extends IService<OrderEntity> {
     OrderSubmitResVo submitOrder(OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException;
 
     Integer getOrderStatus(String orderSn);
+
+    void releaseOrder(String orderSn);
 }
 
