@@ -194,13 +194,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         order.setMemberId(memberVo.getUserId());
         order.setMemberUsername(memberVo.getUsername());
         List<OrderItemVo> orderItemVos = cartFeign.getCartItems(memberVo.getUserId());
-        BigDecimal totalAmount=BigDecimal.ZERO;
-        for(OrderItemVo orderItemVo:orderItemVos)
-        {
-            totalAmount=totalAmount.add(orderItemVo.getTotalPrice());
+        if (orderItemVos == null || orderItemVos.isEmpty()) {
+            throw new RuntimeException("购物车为空，无法下单");
+        }
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (OrderItemVo orderItemVo : orderItemVos) {
+            totalAmount = totalAmount.add(orderItemVo.getTotalPrice());
         }
         order.setTotalAmount(totalAmount);
-        order.setPayAmount(orderSubmitDto.getPayPrice());
+
+        BigDecimal freightAmount = BigDecimal.ZERO;
+        // TODO: 后续根据收货地址查询真实运费替换此处
+        BigDecimal payAmount = totalAmount.add(freightAmount);
+        order.setPayAmount(payAmount);
+
+        if (!orderSubmitDto.getPayPrice().equals(payAmount)) {
+            throw new RuntimeException("验价不通过");
+        }
         order.setCreateTime(new Date());
         order.setAutoConfirmDay(7);
         order.setConfirmStatus(0);
@@ -279,7 +289,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 }
             }
         });
-
         resVo.setOrder(order);
         resVo.setCode(0);
         resVo.setMsg("下单成功");
