@@ -17,15 +17,9 @@ public class OrderMqConstants {
     public static final String STOCK_LOCK_ROUTING_KEY = "stock.locked.stock";
     public static final String STOCK_RELEASE_ROUTING_KEY = "stock.release.stock";
 
-    /** ==================== 积分锁定超时回退 ==================== */
-    public static final String INTEGRATION_DELAY_QUEUE = "integration.delay.queue";
-    public static final String INTEGRATION_RELEASE_QUEUE = "integration.release.integration.queue";
-    public static final String INTEGRATION_LOCK_ROUTING_KEY = "integration.locked.integration";
-    public static final String INTEGRATION_RELEASE_ROUTING_KEY = "integration.release.integration";
 
     /** TTL 配置：订单关单 30 分钟，库存/积分释放 31 分钟 */
     public static final Integer ORDER_TTL = 30 * 60 * 1000;
     public static final Integer STOCK_TTL = 31 * 60 * 1000;
-    public static final Integer INTEGRATION_TTL = 31 * 60 * 1000;
 }
 

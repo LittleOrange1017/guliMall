@@ -1,5 +1,6 @@
 package com.xjz.gulimall.order.service.impl;
 
+import com.xjz.gulimall.order.constants.OrderMqConstants;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.entity.OrderItemEntity;
 import com.xjz.gulimall.order.feign.CartFeign;
@@ -13,7 +14,9 @@ import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderItemVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
 import io.seata.spring.annotation.GlobalTransactional;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.platform.commons.function.Try;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -33,6 +36,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import to.OrderStockTo;
@@ -51,6 +56,7 @@ import vo.SkuHasStockVo;
 
 
 @Service("orderService")
+@Slf4j
 public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> implements OrderService {
     @Autowired
     private StringRedisTemplate redisTemplate;
@@ -66,6 +72,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private ProductFeign productFeign;
     @Autowired
     private OrderItemService orderItemService;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -185,13 +193,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         order.setOrderSn(orderSn);
         order.setMemberId(memberVo.getUserId());
         order.setMemberUsername(memberVo.getUsername());
-        CompletableFuture<List<OrderItemVo>> async = CompletableFuture.supplyAsync(new Supplier<List<OrderItemVo>>() {
-            @Override
-            public List<OrderItemVo> get() {
-                return cartFeign.getCartItems(memberVo.getUserId());
-            }
-        }, threadPoolExecutor);
-        List<OrderItemVo> orderItemVos = async.get();
+        List<OrderItemVo> orderItemVos = cartFeign.getCartItems(memberVo.getUserId());
         BigDecimal totalAmount=BigDecimal.ZERO;
         for(OrderItemVo orderItemVo:orderItemVos)
         {
@@ -222,6 +224,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             order.setReceiverRegion(address.getRegion());
             order.setReceiverDetailAddress(address.getDetailAddress());
         }
+
         this.save(order);
         List<OrderItemEntity> orderItemEntities=new ArrayList<>();
         if(orderItemVos!=null)
@@ -244,6 +247,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             }
             orderItemService.saveBatch(orderItemEntities);
         }
+
+        //锁定库存RPC调用
         OrderStockTo orderStockTo=new OrderStockTo();
         orderStockTo.setOrderSn(orderSn);
         orderStockTo.setLocks(orderItemVos.stream().map(item -> {
@@ -256,8 +261,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
             throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
         }
-        //假装这边调用扣减积分消息的服务出异常
-        int i=10/0;
+        //本地事务提交后的afterCommit回调，向普通交换机发送三条延迟消息
+        final OrderStockTo stockMsgTo=orderStockTo;
+        final String orderSnFinal=orderSn;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try{
+                    //将库存锁定的消息发往交换机
+                    rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,OrderMqConstants.STOCK_LOCK_ROUTING_KEY,stockMsgTo);
+                    //将订单超时关闭的消息发往交换机
+                    rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,OrderMqConstants.ORDER_CREATE_ROUTING_KEY,orderSnFinal);
+                } catch (Exception e) {
+                    log.error("订单[{}]延迟消息发送失败，需人工补偿或写入本地消息表重投", orderSnFinal, e);
+                }
+            }
+        });
+
         resVo.setOrder(order);
         resVo.setCode(0);
         resVo.setMsg("下单成功");

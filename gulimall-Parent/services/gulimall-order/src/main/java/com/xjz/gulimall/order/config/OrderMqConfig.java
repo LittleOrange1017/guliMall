@@ -63,26 +63,6 @@ public class OrderMqConfig {
         return QueueBuilder.durable(STOCK_RELEASE_QUEUE).build();
     }
 
-    /**
-     * 积分延迟队列（TTL=31min）
-     * 消息过期后通过 DLX 路由到 integration.release.integration.queue
-     */
-    @Bean
-    public Queue integrationDelayQueue() {
-        Map<String, Object> args = new HashMap<>();
-        args.put("x-dead-letter-exchange", ORDER_EXCHANGE);
-        args.put("x-dead-letter-routing-key", INTEGRATION_RELEASE_ROUTING_KEY);
-        args.put("x-message-ttl", INTEGRATION_TTL);
-        return QueueBuilder.durable(INTEGRATION_DELAY_QUEUE).withArguments(args).build();
-    }
-
-    /**
-     * 积分释放队列（实际消费队列，由 member 服务监听）
-     */
-    @Bean
-    public Queue integrationReleaseQueue() {
-        return QueueBuilder.durable(INTEGRATION_RELEASE_QUEUE).build();
-    }
 
     /** ==================== 绑定关系 ==================== */
 
@@ -112,20 +92,6 @@ public class OrderMqConfig {
     public Binding stockReleaseBinding() {
         return BindingBuilder.bind(stockReleaseQueue()).to(orderEventExchange())
                 .with(STOCK_RELEASE_ROUTING_KEY);
-    }
-
-    /** 积分锁定消息 → 积分延迟队列 */
-    @Bean
-    public Binding integrationLockBinding() {
-        return BindingBuilder.bind(integrationDelayQueue()).to(orderEventExchange())
-                .with(INTEGRATION_LOCK_ROUTING_KEY);
-    }
-
-    /** 积分释放消息 → 积分释放队列 */
-    @Bean
-    public Binding integrationReleaseBinding() {
-        return BindingBuilder.bind(integrationReleaseQueue()).to(orderEventExchange())
-                .with(INTEGRATION_RELEASE_ROUTING_KEY);
     }
 }
 
