@@ -116,7 +116,8 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
                 throw new RuntimeException("商品SKU[" + lock.getSkuId() + "]库存不足，锁定失败");
             }
             WareSkuEntity wareSkuEntity = skuEntities.get(0);
-            int rows = wareSkuDao.lockStock(lock.getSkuId(), lock.getSkuNum());
+            Long wareId = wareSkuEntity.getWareId();
+            int rows = wareSkuDao.lockStock(lock.getSkuId(), lock.getSkuNum(),wareId);
             if(rows==0)
             {
                 throw new RuntimeException("商品SKU[" + lock.getSkuId() + "]库存不足，锁定失败");

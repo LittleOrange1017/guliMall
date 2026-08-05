@@ -19,6 +19,7 @@
         update wms_ware_sku
         set stock_locked = stock_locked + #{skuNum}
         where sku_id = #{skuId}
+          and ware_id = #{wareId}
           and stock - stock_locked >= #{skuNum}
     </update>
     <select id="listLockStock" resultType="com.xjz.gulimall.ware.entity.WareSkuEntity">

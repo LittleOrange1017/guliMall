@@ -18,7 +18,7 @@ import java.util.List;
 public interface WareSkuDao extends BaseMapper<WareSkuEntity> {
 
     void addStock(Long skuId, Long wareId, Integer skuNum);
-    int lockStock(@Param("skuId") Long skuId, @Param("skuNum") Integer skuNum);
+    int lockStock(@Param("skuId") Long skuId, @Param("skuNum") Integer skuNum,@Param("wareId") Long wareId);
     /**
      * 查询指定 SKU 可锁定的仓库记录（stock - stock_locked >= 需求量）
      */
