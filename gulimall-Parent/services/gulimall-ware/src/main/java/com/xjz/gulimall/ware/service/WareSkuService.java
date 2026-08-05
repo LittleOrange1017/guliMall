@@ -9,6 +9,7 @@ import vo.SkuHasStockVo;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 商品库存
@@ -26,6 +27,8 @@ public interface WareSkuService extends IService<WareSkuEntity> {
     List<SkuHasStockVo> getSkuStockBySpuId(SkuStockTo skuStockTo);
 
     void lockStock(OrderStockTo orderStockTo);
+
+    void unLockStock(OrderStockTo orderStockTo) throws ExecutionException, InterruptedException;
 }
 
 

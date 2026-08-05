@@ -107,4 +107,22 @@ public class OrderController {
         return R.ok().put("freightAmount", freightAmount);
     }
 
+    /**
+     * 根据订单号去查询订单状态数据
+     * @param orderSn
+     * @return
+     */
+    @GetMapping("/orderSn/{orderSn}")
+    public R getOrderStatus(@PathVariable("orderSn") String orderSn){
+       Integer status= orderService.getOrderStatus(orderSn);
+       if(status.equals(4))
+       {
+           return R.error();
+       }
+       else
+       {
+           return R.ok();
+       }
+    }
+
 }

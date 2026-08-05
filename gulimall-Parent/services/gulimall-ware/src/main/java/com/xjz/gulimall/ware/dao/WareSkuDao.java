@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * 商品库存
  * 
@@ -17,4 +19,10 @@ public interface WareSkuDao extends BaseMapper<WareSkuEntity> {
 
     void addStock(Long skuId, Long wareId, Integer skuNum);
     int lockStock(@Param("skuId") Long skuId, @Param("skuNum") Integer skuNum);
+    /**
+     * 查询指定 SKU 可锁定的仓库记录（stock - stock_locked >= 需求量）
+     */
+    List<WareSkuEntity> listLockStock(@Param("skuId") Long skuId, @Param("skuNum") Integer skuNum);
+
+    void unlockStock(Long skuId, Long wareId, Integer skuNum);
 }

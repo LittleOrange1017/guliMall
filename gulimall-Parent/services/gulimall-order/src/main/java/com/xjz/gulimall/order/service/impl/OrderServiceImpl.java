@@ -205,6 +205,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         order.setAutoConfirmDay(7);
         order.setConfirmStatus(0);
         order.setDeleteStatus(0);
+        order.setStatus(0);
         order.setSourceType(0);
         order.setPayType(orderSubmitDto.getPayType());
         order.setFreightAmount(BigDecimal.ZERO);
@@ -251,6 +252,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         //锁定库存RPC调用
         OrderStockTo orderStockTo=new OrderStockTo();
         orderStockTo.setOrderSn(orderSn);
+        orderStockTo.setOrderId(order.getId());
         orderStockTo.setLocks(orderItemVos.stream().map(item -> {
             SkuStockLockedTo locked = new SkuStockLockedTo();
             locked.setSkuId(item.getSkuId());
@@ -282,5 +284,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         resVo.setCode(0);
         resVo.setMsg("下单成功");
         return resVo;
+    }
+
+    @Override
+    public Integer getOrderStatus(String orderSn) {
+        QueryWrapper<OrderEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("order_sn",orderSn);
+        OrderEntity order = this.getOne(queryWrapper);
+        if(order!=null)
+        {
+            return order.getStatus();
+        }
+        else
+        {
+            return -1;
+        }
     }
 }
