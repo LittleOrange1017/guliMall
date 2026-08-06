@@ -448,8 +448,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         // 4.【防线三：状态机幂等性检查】
         // 订单状态：0->待付款；1->已付款；2->已发货；3->已完成；4->已关闭
         if (order.getStatus().equals(1)) {
-            // 订单已经是“已付款”状态，说明是支付宝重复发送的通知，直接返回 success 停止重试
             return "success";
+        }
+        if (order.getStatus().equals(4)) {
+            log.error("【支付异常】订单[{}]已关闭但用户已付款！支付宝流水号：{}，金额：{}，需人工介入退款或重新激活订单",
+                    orderSn, asyncVo.getTradeNo(), asyncVo.getTotalAmount());
+            return "failure";
         }
         //更新订单状态
         boolean updateSuccess = this.update(
@@ -457,12 +461,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                         .set("status", 1)
                         .set("payment_time", asyncVo.getGmtPayment())
                         .eq("order_sn", orderSn)
-                        .eq("status", 0) // 只有当前是待付款才更新
+                        .eq("status", 0)
         );
         if (updateSuccess) {
-            // 7. 保存支付流水记录 (oms_payment_info)
             savePaymentInfo(asyncVo);
             log.info("【支付成功】订单 {} 状态更新为 [已付款]！流水号：{}", orderSn, asyncVo.getTradeNo());
+        } else {
+            log.error("【支付异常】订单[{}]状态更新失败，当前状态：{}，支付宝流水号：{}",
+                    orderSn, order.getStatus(), asyncVo.getTradeNo());
+            return "failure";
         }
 
         return "success";
