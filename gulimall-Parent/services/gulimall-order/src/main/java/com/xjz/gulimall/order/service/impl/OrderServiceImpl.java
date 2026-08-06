@@ -203,12 +203,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         }
         order.setTotalAmount(totalAmount);
 
-        BigDecimal freightAmount = BigDecimal.ZERO;
+        BigDecimal freightAmount = new BigDecimal(10);
         // TODO: 后续根据收货地址查询真实运费替换此处
         BigDecimal payAmount = totalAmount.add(freightAmount);
         order.setPayAmount(payAmount);
-
-        if (!orderSubmitDto.getPayPrice().equals(payAmount)) {
+        if (orderSubmitDto.getPayPrice().compareTo(payAmount) != 0) {
             throw new RuntimeException("验价不通过");
         }
         order.setCreateTime(new Date());

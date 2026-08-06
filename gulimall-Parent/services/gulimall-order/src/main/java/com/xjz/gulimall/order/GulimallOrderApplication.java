@@ -17,7 +17,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @Create 2026/3/11 13:38
  * @Version 1.0
  */
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+    io.seata.spring.boot.autoconfigure.SeataAutoConfiguration.class,
+    io.seata.spring.boot.autoconfigure.SeataDataSourceAutoConfiguration.class
+})
 @EnableDiscoveryClient
 @EnableRabbit
 @EnableFeignClients
