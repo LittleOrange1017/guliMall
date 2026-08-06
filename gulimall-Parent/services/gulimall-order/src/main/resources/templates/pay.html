@@ -89,7 +89,7 @@
               <input type="password"><span>忘记支付密码？</span>
             </li>
             <li>
-              <button>立即支付</button>
+              <button id="payBtn" th:data-order-sn="${orderSn}">立即支付</button>
             </li>
           </ul>
         </div>
@@ -139,12 +139,11 @@
     }).mouseout(function(){
       $(this).css("color","#67A4FF")
     })
-    //立即支付按钮效果
-    $(".Jd_main ul li:nth-child(5) button").mouseover(function(){
-      $(this).css({"cursor":"pointer","background":"#FF5350"})
-    }).mouseout(function(){
-      $(this).css("background","#FC6E6C")
-    })
+    //立即支付按钮点击 → 跳转支付宝支付页面
+    $("#payBtn").on("click", function () {
+      var orderSn = $(this).data("order-sn");
+      window.location.href = "/payOrder?orderSn=" + encodeURIComponent(orderSn);
+    });
 
     $(".Jd_footer ul li").mouseover(function(){
       $(this).css({"cursor":"pointer","color":"#E31613"})

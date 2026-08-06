@@ -1,10 +1,12 @@
 package com.xjz.gulimall.order.web;
 
 import com.alibaba.fastjson.JSON;
+import com.alipay.api.AlipayApiException;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.service.OrderService;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import com.xjz.gulimall.order.vo.PayVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -58,6 +60,14 @@ public class OrderWeb {
         model.addAttribute("orderSn", orderSn);
         model.addAttribute("payAmount", new BigDecimal(payAmount));
         return "pay";
+    }
+    @ResponseBody
+    @GetMapping(value = "/payOrder",produces = "text/html;charset=UTF-8")
+    public String payOrder(@RequestParam("orderSn") String orderSn) throws AlipayApiException {
+       PayVo payVo= orderService.getOrderPay(orderSn);
+       //调用支付宝SDK产生HTML字符串
+       String payHtmlStr = orderService.payOrder(payVo);
+       return payHtmlStr;
     }
 
 }

@@ -1,5 +1,7 @@
 package com.xjz.gulimall.order.service.impl;
 
+import com.alipay.api.AlipayApiException;
+import com.xjz.gulimall.order.config.AlipayTemplate;
 import com.xjz.gulimall.order.constants.OrderMqConstants;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.entity.OrderItemEntity;
@@ -9,10 +11,7 @@ import com.xjz.gulimall.order.feign.ProductFeign;
 import com.xjz.gulimall.order.feign.WareFeign;
 import com.xjz.gulimall.order.interceptor.LoginUserInterceptor;
 import com.xjz.gulimall.order.service.OrderItemService;
-import com.xjz.gulimall.order.vo.MemberAddressVo;
-import com.xjz.gulimall.order.vo.OrderConfirmVo;
-import com.xjz.gulimall.order.vo.OrderItemVo;
-import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import com.xjz.gulimall.order.vo.*;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.platform.commons.function.Try;
@@ -23,6 +22,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -74,6 +74,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private OrderItemService orderItemService;
     @Autowired
     private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private AlipayTemplate alipayTemplate;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -328,5 +330,35 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 log.info("关单处理：订单[{}]不存在或已非待付款状态，跳过关单", orderSn);
             }
         }
+    }
+
+    @Override
+    public PayVo getOrderPay(String orderSn) {
+        PayVo payVo=new PayVo();
+        OrderEntity order = getOne(new QueryWrapper<OrderEntity>().eq("order_sn", orderSn).eq("status", 0));
+        //格式化金额，支付宝严格要求保留两位小数，如 88.00
+        BigDecimal payAmount = order.getPayAmount().setScale(2, RoundingMode.HALF_UP);
+        payVo.setTotalAmount(payAmount.toString());
+        payVo.setOutTradeNo(order.getOrderSn());
+        // 4. 查询订单项名称，设置标题与备注
+        List<OrderItemEntity> orderItems = orderItemService.list(
+                new QueryWrapper<OrderItemEntity>().eq("order_sn", orderSn)
+        );
+        //比如说有两个商品
+        if (orderItems != null && orderItems.size() > 0) {
+            OrderItemEntity item = orderItems.get(0);
+            // 设置订单标题，例如："谷粒商城-华为Mate60"
+            payVo.setSubject("谷粒商城-" + item.getSkuName());
+            payVo.setBody("谷粒商城订单商品明细");
+        } else {
+            payVo.setSubject("谷粒商城订单-" + order.getOrderSn());
+            payVo.setBody("谷粒商城订单");
+        }
+        return payVo;
+    }
+
+    @Override
+    public String payOrder(PayVo payVo) throws AlipayApiException {
+        return alipayTemplate.Pay(payVo);
     }
 }

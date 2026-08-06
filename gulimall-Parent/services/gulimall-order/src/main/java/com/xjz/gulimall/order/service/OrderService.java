@@ -1,9 +1,11 @@
 package com.xjz.gulimall.order.service;
 
+import com.alipay.api.AlipayApiException;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import com.xjz.gulimall.order.vo.PayVo;
 import utils.PageUtils;
 import com.xjz.gulimall.order.entity.OrderEntity;
 
@@ -28,5 +30,9 @@ public interface OrderService extends IService<OrderEntity> {
     Integer getOrderStatus(String orderSn);
 
     void releaseOrder(String orderSn);
+
+    PayVo getOrderPay(String orderSn);
+
+    String payOrder(PayVo payVo) throws AlipayApiException;
 }
 

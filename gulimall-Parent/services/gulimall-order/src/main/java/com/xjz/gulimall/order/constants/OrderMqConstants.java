@@ -19,7 +19,7 @@ public class OrderMqConstants {
 
 
     /** TTL 配置（测试用，上线前改回 30*60*1000 / 31*60*1000） */
-    public static final Integer ORDER_TTL = 10 * 1000;
-    public static final Integer STOCK_TTL = 15 * 1000;
+    public static final Integer ORDER_TTL = 30*60 * 1000;
+    public static final Integer STOCK_TTL = 31*60 * 1000;
 }
 
