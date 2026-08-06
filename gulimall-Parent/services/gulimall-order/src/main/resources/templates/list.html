@@ -11,6 +11,45 @@
     * {
       font-family: "微软雅黑";
     }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      table-layout: fixed;
+    }
+    .table td {
+      padding: 10px 8px;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-all;
+    }
+    .table tr:first-child td {
+      padding: 8px 12px;
+    }
+    .table .tr td:first-child {
+      width: 42%;
+    }
+    .table .tr td:nth-child(2) {
+      width: 12%;
+      text-align: center;
+    }
+    .table .tr td:nth-child(3) {
+      width: 14%;
+      text-align: center;
+    }
+    .table .tr td:nth-child(4) {
+      width: 14%;
+      text-align: center;
+    }
+    .table .tr td:nth-child(5) {
+      width: 18%;
+      text-align: center;
+    }
+    .order_btm {
+      text-align: center;
+      padding: 20px 0;
+    }
   </style>
 </head>
 
@@ -204,48 +243,50 @@
           暂无订单
         </div>
 
-        <table class="table" th:each="order : ${orders.list}">
+        <table class="table" th:each="order : ${orders.list}" style="border:1px solid #eee; border-radius:4px; overflow:hidden;">
           <tr>
-            <td colspan="7" style="background:#F7F7F7">
-              <span style="color:#AAAAAA" th:text="${#dates.format(order.createTime, 'yyyy-MM-dd HH:mm:ss')}">2017-12-09 20:50:10</span>
-              <span><ruby style="color:#AAAAAA">订单号:</ruby> <span th:text="${order.orderSn}">70207298274</span></span>
+            <td colspan="7" style="background:#F7F7F7; padding:10px 14px; border-bottom:1px solid #eee;">
+              <span style="color:#888; font-size:13px;" th:text="${#dates.format(order.createTime, 'yyyy-MM-dd HH:mm:ss')}">2017-12-09 20:50:10</span>
+              <span style="margin-left:20px; color:#555; font-size:13px;">订单号:<span th:text="${order.orderSn}" style="margin-left:4px; color:#333;">70207298274</span></span>
               <i class="table_i5 isShow"></i>
             </td>
           </tr>
           <tr class="tr" th:each="item : ${order.itemEntities}">
-            <td colspan="3">
-              <img th:src="${item.skuPic != null ? item.skuPic : '/static/order/list/img/ding.jpg'}" alt="" style="width:80px; height:80px; float:left; object-fit:cover;">
-              <div style="float:left; width:calc(100% - 180px); margin-left:10px;">
-                <p th:text="${item.skuName}">商品名称</p>
+            <td colspan="3" style="width:42%;">
+              <div style="display:flex; align-items:center; padding:6px 0;">
+                <img th:src="${item.skuPic != null ? item.skuPic : '/static/order/list/img/ding.jpg'}" alt="" style="width:70px; height:70px; min-width:70px; object-fit:cover; border-radius:4px; border:1px solid #f0f0f0;">
+                <div style="margin-left:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                  <p style="margin:0; font-size:13px; color:#333; line-height:1.4;" th:text="${item.skuName}">商品名称</p>
+                </div>
+                <div style="margin-left:12px; white-space:nowrap; color:#999; font-size:13px;" th:text="'x' + ${item.skuQuantity}">x1</div>
               </div>
-              <div style="margin-left:15px; float:left; line-height:80px;" th:text="'x' + ${item.skuQuantity}">x1</div>
-              <div style="clear:both"></div>
             </td>
-            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" th:text="${order.receiverName}">收货人</td>
-            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" style="padding-left:10px;color:#AAAAB1;">
-              <p style="margin-bottom:5px;">总额 ￥<span th:text="${#numbers.formatDecimal(order.payAmount, 1, 2)}">0.00</span></p>
-              <hr style="width:90%;">
-              <p>在线支付</p>
+            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" style="text-align:center; font-size:13px; color:#666;" th:text="${order.receiverName}">收货人</td>
+            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" style="text-align:center; color:#333; font-size:13px;">
+              <p style="margin:0 0 4px 0; font-weight:600;">￥<span th:text="${#numbers.formatDecimal(order.payAmount, 1, 2)}">0.00</span></p>
+              <p style="margin:0; color:#999; font-size:12px;">在线支付</p>
             </td>
-            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}">
-              <ul>
-                <li th:switch="${order.status}">
-                  <span th:case="0" style="color:#E4393C;">待付款</span>
-                  <span th:case="1" style="color:#71B247;">待发货</span>
-                  <span th:case="2" style="color:#71B247;">已发货</span>
-                  <span th:case="3" style="color:#71B247;">已完成</span>
+            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" style="text-align:center;">
+              <ul style="list-style:none; padding:0; margin:0;">
+                <li th:switch="${order.status}" style="font-size:13px; margin-bottom:6px;">
+                  <span th:case="0" style="color:#E4393C; font-weight:600;">待付款</span>
+                  <span th:case="1" style="color:#71B247; font-weight:600;">待发货</span>
+                  <span th:case="2" style="color:#71B247; font-weight:600;">已发货</span>
+                  <span th:case="3" style="color:#71B247; font-weight:600;">已完成</span>
                   <span th:case="4" style="color:#AAAAAA;">已关闭</span>
                   <span th:case="5" style="color:#AAAAAA;">无效订单</span>
                 </li>
-                <li class="tdLi">订单详情</li>
+                <li style="font-size:12px; color:#1890ff; cursor:pointer;">订单详情</li>
               </ul>
             </td>
-            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}">
-              <a th:if="${order.status == 0}" th:href="@{/pay(orderSn=${order.orderSn}, payAmount=${order.payAmount})}">
-                <button>去支付</button>
-              </a>
-              <p th:if="${order.status == 1}" style="margin:4px 0;">确认收货</p>
-              <p th:if="${order.status == 0}" style="margin:4px 0;">取消订单</p>
+            <td th:if="${itemStat.first}" th:rowspan="${#lists.size(order.itemEntities)}" style="text-align:center;">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <a th:if="${order.status == 0}" th:href="@{/pay(orderSn=${order.orderSn}, payAmount=${order.payAmount})}">
+                  <button style="background:#E4393C; color:#fff; border:none; padding:5px 16px; border-radius:3px; cursor:pointer; font-size:12px;">去支付</button>
+                </a>
+                <p th:if="${order.status == 1}" style="margin:0; color:#1890ff; cursor:pointer; font-size:12px;">确认收货</p>
+                <p th:if="${order.status == 0}" style="margin:0; color:#999; cursor:pointer; font-size:12px;">取消订单</p>
+              </div>
             </td>
           </tr>
         </table>
