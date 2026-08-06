@@ -285,6 +285,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
             throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
         }
+
+        //删除购物车数据
+        String skuIdsStr = orderItemVos.stream()
+                .map(item -> item.getSkuId().toString())
+                .collect(Collectors.joining(","));
+        R deleteResult = cartFeign.deleteCartItems(skuIdsStr);
+        if (deleteResult == null || !Integer.valueOf(0).equals(deleteResult.get("code"))) {
+            log.warn("订单[{}]删除购物车失败，可能影响用户体验，需人工核查", orderSn);
+        }
+
         //本地事务提交后的afterCommit回调，向普通交换机发送三条延迟消息
         final OrderStockTo stockMsgTo=orderStockTo;
         final String orderSnFinal=orderSn;
