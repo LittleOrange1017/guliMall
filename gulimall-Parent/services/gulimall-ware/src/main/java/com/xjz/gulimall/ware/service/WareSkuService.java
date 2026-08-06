@@ -29,6 +29,8 @@ public interface WareSkuService extends IService<WareSkuEntity> {
     void lockStock(OrderStockTo orderStockTo);
 
     void unLockStock(OrderStockTo orderStockTo) throws ExecutionException, InterruptedException;
+
+    void reconcileLockedStock(int timeoutMinutes);
 }
 
 

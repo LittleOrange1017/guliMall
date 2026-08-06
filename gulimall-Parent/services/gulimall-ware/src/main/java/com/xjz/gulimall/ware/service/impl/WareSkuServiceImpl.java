@@ -189,4 +189,45 @@ public class WareSkuServiceImpl extends ServiceImpl<WareSkuDao, WareSkuEntity> i
             log.info("订单[{}]已付款，跳过库存解锁", orderSn);
         }
     }
+
+    @Override
+    public void reconcileLockedStock(int timeoutMinutes) {
+        //从task表中查询创建时间超时的任务
+        Date cutoff = new Date(System.currentTimeMillis() - timeoutMinutes * 60 * 1000L);
+        List<WareOrderTaskEntity> taskEntities = taskService.list(new QueryWrapper<WareOrderTaskEntity>().lt("create_time", cutoff));
+        if(taskEntities==null||taskEntities.isEmpty())
+        {
+            return;
+        }
+        for(WareOrderTaskEntity task:taskEntities)
+        {
+            List<WareOrderTaskDetailEntity> details = wareOrderTaskDetailService.list(
+                    new QueryWrapper<WareOrderTaskDetailEntity>()
+                            .eq("task_id", task.getId())
+                            .eq("lock_status", 1));
+            if (details == null || details.isEmpty()) {
+                continue;
+            }
+
+            //反查订单状态，解锁那些已关闭/不存在订单的库存
+            try{
+                R r = orderFeign.getOrderStatus(task.getOrderSn());
+                Integer status = r == null ? null : (Integer) r.get("status");
+                if (status == null || status == -1 || status == 4){
+                    for (WareOrderTaskDetailEntity detail : details) {
+                        wareSkuDao.unlockStock(detail.getSkuId(), detail.getWareId(), detail.getSkuNum());
+                        detail.setLockStatus(2);
+                    }
+                    wareOrderTaskDetailService.updateBatchById(details);
+                }
+                else
+                {
+                    log.info("兜底对账：订单[{}]状态为{}（待付款/已付款），跳过", task.getOrderSn(), status);
+                }
+            } catch (Exception e) {
+                log.error("兜底对账：处理订单[{}]时异常，跳过", task.getOrderSn(), e);
+            }
+        }
+
+    }
 }
