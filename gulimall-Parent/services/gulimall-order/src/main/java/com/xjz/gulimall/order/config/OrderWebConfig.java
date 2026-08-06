@@ -12,6 +12,9 @@ public class OrderWebConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                         "/order/order/orderSn/**"
+                )
+                .excludePathPatterns(
+                        "/payed/notify"
                 );
     }
 }

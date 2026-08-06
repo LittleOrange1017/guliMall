@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,13 +24,9 @@ public class OrderPayNotifyController {
     private AlipayTemplate alipayTemplate;
     @Autowired
     private AlipayConfigProperties alipayConfigProperties;
-    /**
-     * 接收支付宝异步通知的主入口
-     * 注意：必须返回纯文本 "success" 或 "failure"，不能返回 JSON 或 HTML！
-     */
+
     @PostMapping("/payed/notify")
-    public String handleAlipayNotify(PayAsyncVo asyncVo, HttpServletRequest request) throws AlipayApiException {
-        // 1. 将 HttpServletRequest 中的参数转换为 AlipaySignature 验签所需的 Map<String, String>
+    public String handleAlipayNotify(HttpServletRequest request) throws AlipayApiException {
         Map<String,String> params=new HashMap<>();
         Map<String, String[]> requestParams = request.getParameterMap();
         for (String name : requestParams.keySet()) {
@@ -40,19 +37,44 @@ public class OrderPayNotifyController {
             }
             params.put(name, valueStr);
         }
-        //调用SDK进行RSA2签名验证
         boolean rsaCheckV1 = AlipaySignature.rsaCheckV1(params, alipayConfigProperties.getAlipayPublicKey(), alipayConfigProperties.getCharset(), alipayConfigProperties.getSignType());
         if(rsaCheckV1)
         {
-            //验签成功，交给service层进行订单状态更新以及幂等逻辑
-           String result= orderService.handlePayResult(asyncVo);
-           return result;
+            PayAsyncVo asyncVo = buildPayAsyncVo(params);
+            String result= orderService.handlePayResult(asyncVo);
+            return result;
         }
         else
         {
-            // 验签失败：可能有人伪造回调，记录严重警告日志
             System.err.println("【安全警告】支付宝异步通知签名验证失败！非法请求来源！");
             return "failure";
         }
+    }
+
+    private PayAsyncVo buildPayAsyncVo(Map<String, String> params) {
+        PayAsyncVo vo = new PayAsyncVo();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String fieldName = snakeToCamel(entry.getKey());
+            try {
+                Field field = PayAsyncVo.class.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(vo, entry.getValue());
+            } catch (NoSuchFieldException ignored) {
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return vo;
+    }
+
+    private String snakeToCamel(String snake) {
+        if (!snake.contains("_")) return snake;
+        StringBuilder sb = new StringBuilder();
+        boolean upper = false;
+        for (char c : snake.toCharArray()) {
+            if (c == '_') { upper = true; }
+            else { sb.append(upper ? Character.toUpperCase(c) : c); upper = false; }
+        }
+        return sb.toString();
     }
 }
