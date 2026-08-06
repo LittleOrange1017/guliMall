@@ -357,7 +357,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     public PayVo getOrderPay(String orderSn) {
         PayVo payVo=new PayVo();
         OrderEntity order = getOne(new QueryWrapper<OrderEntity>().eq("order_sn", orderSn).eq("status", 0));
-        //格式化金额，支付宝严格要求保留两位小数，如 88.00
+        if (order == null) {
+            throw new RuntimeException("订单不存在或已关闭，无法支付");
+        }
         BigDecimal payAmount = order.getPayAmount().setScale(2, RoundingMode.HALF_UP);
         payVo.setTotalAmount(payAmount.toString());
         payVo.setOutTradeNo(order.getOrderSn());
