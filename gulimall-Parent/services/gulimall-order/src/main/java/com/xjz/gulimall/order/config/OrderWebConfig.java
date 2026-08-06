@@ -8,6 +8,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class OrderWebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new LoginUserInterceptor()).addPathPatterns("/**");
+        registry.addInterceptor(new LoginUserInterceptor())
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                        "/order/order/orderSn/**"
+                );
     }
 }
