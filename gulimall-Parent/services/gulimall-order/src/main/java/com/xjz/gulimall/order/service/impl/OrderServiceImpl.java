@@ -1,6 +1,7 @@
 package com.xjz.gulimall.order.service.impl;
 
 import com.alipay.api.AlipayApiException;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xjz.gulimall.order.config.AlipayTemplate;
 import com.xjz.gulimall.order.constants.OrderMqConstants;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
@@ -29,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -360,5 +362,37 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     @Override
     public String payOrder(PayVo payVo) throws AlipayApiException {
         return alipayTemplate.Pay(payVo);
+    }
+
+    @Override
+    public PageUtils queryPageWithItem(Map<String, Object> params) {
+        MemberVo memberVo = LoginUserInterceptor.loginUser.get();
+        if (memberVo == null) {
+            throw new RuntimeException("用户未登录，无法查询订单列表");
+        }
+        //查询当前用户的订单，按照创建时间倒序排序
+        IPage<OrderEntity> page = this.page(
+                new Query<OrderEntity>().getPage(params),
+                new QueryWrapper<OrderEntity>()
+                        .eq("member_id", memberVo.getUserId())
+                        .orderByDesc("create_time")
+        );
+        List<OrderEntity> orderEntities = page.getRecords();
+        if (orderEntities == null || orderEntities.isEmpty()) {
+            return new PageUtils(page);
+        }
+        //批量查询当前页所有订单的订单项，按订单号分组，避免循环内逐条查询（N+1 问题）
+        List<String> orderSns = orderEntities.stream()
+                .map(OrderEntity::getOrderSn)
+                .collect(Collectors.toList());
+        Map<String, List<OrderItemEntity>> itemMap = orderItemService.list(
+                        new QueryWrapper<OrderItemEntity>().in("order_sn", orderSns))
+                .stream()
+                .collect(Collectors.groupingBy(OrderItemEntity::getOrderSn));
+        //挂载订单项到对应订单
+        orderEntities.forEach(order ->
+                order.setItemEntities(itemMap.getOrDefault(order.getOrderSn(), Collections.emptyList()))
+        );
+        return new PageUtils(page);
     }
 }

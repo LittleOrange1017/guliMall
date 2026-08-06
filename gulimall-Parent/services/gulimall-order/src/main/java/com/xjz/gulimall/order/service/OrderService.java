@@ -34,5 +34,7 @@ public interface OrderService extends IService<OrderEntity> {
     PayVo getOrderPay(String orderSn);
 
     String payOrder(PayVo payVo) throws AlipayApiException;
+
+    PageUtils queryPageWithItem(Map<String, Object> params);
 }
 

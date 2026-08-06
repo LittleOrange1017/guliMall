@@ -12,12 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import utils.PageUtils;
 import utils.R;
 import vo.MemberVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @Controller
@@ -25,9 +28,19 @@ import java.util.concurrent.ExecutionException;
 public class OrderWeb {
     @Autowired
     private OrderService orderService;
-    @GetMapping("/{page:[^\\.]+}")
+    @GetMapping("/{page:(?!list$)[^\\.]+}")
     public String listPage(HttpServletRequest request,Model model, @PathVariable("page") String page){
         return page;
+    }
+    @GetMapping("/list")
+    public String orderListPage(@RequestParam(value = "page", defaultValue = "1") String page,
+                                Model model){
+        Map<String,Object> params=new HashMap<>();
+        params.put("page",page);
+        params.put("limit","5");
+        PageUtils pageUtils= orderService.queryPageWithItem(params);
+        model.addAttribute("orders",pageUtils);
+        return "list";
     }
     @GetMapping("/toTrade")
     public String toTrade(Model model){
