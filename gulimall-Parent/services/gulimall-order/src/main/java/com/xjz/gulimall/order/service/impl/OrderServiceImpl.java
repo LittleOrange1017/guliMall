@@ -1,17 +1,22 @@
 package com.xjz.gulimall.order.service.impl;
 
 import com.alipay.api.AlipayApiException;
+import com.alipay.api.AlipayConfig;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xjz.gulimall.order.config.AlipayConfigProperties;
 import com.xjz.gulimall.order.config.AlipayTemplate;
 import com.xjz.gulimall.order.constants.OrderMqConstants;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.entity.OrderItemEntity;
+import com.xjz.gulimall.order.entity.PaymentInfoEntity;
 import com.xjz.gulimall.order.feign.CartFeign;
 import com.xjz.gulimall.order.feign.MemberFeign;
 import com.xjz.gulimall.order.feign.ProductFeign;
 import com.xjz.gulimall.order.feign.WareFeign;
 import com.xjz.gulimall.order.interceptor.LoginUserInterceptor;
 import com.xjz.gulimall.order.service.OrderItemService;
+import com.xjz.gulimall.order.service.PaymentInfoService;
 import com.xjz.gulimall.order.vo.*;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +83,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private RabbitTemplate rabbitTemplate;
     @Autowired
     private AlipayTemplate alipayTemplate;
+    @Autowired
+    private AlipayConfigProperties alipayConfigProperties;
+    @Autowired
+    private PaymentInfoService paymentInfoService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -394,5 +403,78 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 order.setItemEntities(itemMap.getOrDefault(order.getOrderSn(), Collections.emptyList()))
         );
         return new PageUtils(page);
+    }
+
+    @Override
+    public String handlePayResult(PayAsyncVo asyncVo) {
+        //校验appId
+        if(!alipayConfigProperties.getAppId().equals(asyncVo.getAppId()))
+        {
+            log.error("【支付回调校验失败】AppID 不匹配，收到：{}", asyncVo.getAppId());
+            return "failure";
+        }
+        //【防线二：校验交易状态】状态如果不是 TRADE_SUCCESS 或 TRADE_FINISHED ，就返回success，让支付宝停止异步通知
+        String tradeStatus = asyncVo.getTradeStatus();
+        if(!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus))
+        {
+            return "success";
+        }
+        //到这里，代表用户已经付过钱了
+        //校验订单存在性
+        String orderSn = asyncVo.getOutTradeNo();
+        OrderEntity order=this.getOrderByOrderSn(orderSn);
+        if(order==null)
+        {
+            log.error("【支付回调校验失败】订单不存在，订单号：{}", orderSn);
+            return "failure";
+        }
+        //校验订单金额
+        BigDecimal payAmountFromAlipay = new BigDecimal(asyncVo.getTotalAmount());
+        if (order.getPayAmount().compareTo(payAmountFromAlipay) != 0) {
+            log.error("【支付回调校验失败】订单金额不一致！数据库：{}，支付宝通知：{}",
+                    order.getPayAmount(), payAmountFromAlipay);
+            return "failure";
+        }
+        // 4.【防线三：状态机幂等性检查】
+        // 订单状态：0->待付款；1->已付款；2->已发货；3->已完成；4->已关闭
+        if (order.getStatus().equals(1)) {
+            // 订单已经是“已付款”状态，说明是支付宝重复发送的通知，直接返回 success 停止重试
+            return "success";
+        }
+        //更新订单状态
+        boolean updateSuccess = this.update(
+                new UpdateWrapper<OrderEntity>()
+                        .set("status", 1)
+                        .set("payment_time", asyncVo.getGmtPayment())
+                        .eq("order_sn", orderSn)
+                        .eq("status", 0) // 只有当前是待付款才更新
+        );
+        if (updateSuccess) {
+            // 7. 保存支付流水记录 (oms_payment_info)
+            savePaymentInfo(asyncVo);
+            log.info("【支付成功】订单 {} 状态更新为 [已付款]！流水号：{}", orderSn, asyncVo.getTradeNo());
+        }
+
+        return "success";
+
+    }
+
+    private void savePaymentInfo(PayAsyncVo asyncVo) {
+        PaymentInfoEntity paymentInfo = new PaymentInfoEntity();
+        paymentInfo.setOrderSn(asyncVo.getOutTradeNo());
+        paymentInfo.setAlipayTradeNo(asyncVo.getTradeNo());
+        paymentInfo.setTotalAmount(new BigDecimal(asyncVo.getTotalAmount()));
+        paymentInfo.setSubject(asyncVo.getSubject());
+        paymentInfo.setPaymentStatus(asyncVo.getTradeStatus());
+        paymentInfo.setCreateTime(new Date());
+        paymentInfo.setCallbackTime(new Date());
+
+        paymentInfoService.save(paymentInfo);
+    }
+
+    private OrderEntity getOrderByOrderSn(String orderSn) {
+        QueryWrapper<OrderEntity> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("order_sn",orderSn);
+        return this.getOne(queryWrapper);
     }
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.xjz.gulimall.order.dto.OrderSubmitDto;
 import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
+import com.xjz.gulimall.order.vo.PayAsyncVo;
 import com.xjz.gulimall.order.vo.PayVo;
 import utils.PageUtils;
 import com.xjz.gulimall.order.entity.OrderEntity;
@@ -36,5 +37,7 @@ public interface OrderService extends IService<OrderEntity> {
     String payOrder(PayVo payVo) throws AlipayApiException;
 
     PageUtils queryPageWithItem(Map<String, Object> params);
+
+    String handlePayResult(PayAsyncVo asyncVo);
 }
 
