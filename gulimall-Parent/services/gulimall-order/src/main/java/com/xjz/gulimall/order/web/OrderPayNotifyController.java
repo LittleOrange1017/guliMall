@@ -26,7 +26,7 @@ public class OrderPayNotifyController {
     private AlipayConfigProperties alipayConfigProperties;
 
     @PostMapping("/payed/notify")
-    public String handleAlipayNotify(HttpServletRequest request) throws AlipayApiException {
+    public String handleAlipayNotify(HttpServletRequest request) throws AlipayApiException, InterruptedException {
         Map<String,String> params=new HashMap<>();
         Map<String, String[]> requestParams = request.getParameterMap();
         for (String name : requestParams.keySet()) {

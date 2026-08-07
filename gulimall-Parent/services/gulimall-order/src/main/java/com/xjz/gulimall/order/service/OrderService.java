@@ -38,6 +38,6 @@ public interface OrderService extends IService<OrderEntity> {
 
     PageUtils queryPageWithItem(Map<String, Object> params);
 
-    String handlePayResult(PayAsyncVo asyncVo);
+    String handlePayResult(PayAsyncVo asyncVo) throws InterruptedException;
 }
 

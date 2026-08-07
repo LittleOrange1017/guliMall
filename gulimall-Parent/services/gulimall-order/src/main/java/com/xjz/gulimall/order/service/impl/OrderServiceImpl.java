@@ -6,10 +6,13 @@ import com.alipay.api.AlipayConfig;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.domain.AlipayTradeCloseModel;
 import com.alipay.api.domain.AlipayTradeQueryModel;
+import com.alipay.api.domain.AlipayTradeRefundModel;
 import com.alipay.api.request.AlipayTradeCloseRequest;
 import com.alipay.api.request.AlipayTradeQueryRequest;
+import com.alipay.api.request.AlipayTradeRefundRequest;
 import com.alipay.api.response.AlipayTradeCloseResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
+import com.alipay.api.response.AlipayTradeRefundResponse;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xjz.gulimall.order.config.AlipayConfigProperties;
@@ -540,7 +543,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     }
 
     @Override
-    public String handlePayResult(PayAsyncVo asyncVo) {
+    public String handlePayResult(PayAsyncVo asyncVo) throws InterruptedException {
+        String orderSn = asyncVo.getOutTradeNo();
+        String lockKey = "order:lock:" + orderSn;
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean isLocked = false;
+        isLocked = lock.tryLock(3, TimeUnit.SECONDS);
+        if (!isLocked) {
+            log.error("订单[{}]支付回调获取分布式锁超时，返回 failure 触发支付宝后续重试", orderSn);
+            return "failure";
+        }
         //校验appId
         if(!alipayConfigProperties.getAppId().equals(asyncVo.getAppId()))
         {
@@ -555,7 +567,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         }
         //到这里，代表用户已经付过钱了
         //校验订单存在性
-        String orderSn = asyncVo.getOutTradeNo();
         OrderEntity order=this.getOrderByOrderSn(orderSn);
         if(order==null)
         {
@@ -575,9 +586,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             return "success";
         }
         if (order.getStatus().equals(4)) {
-            log.error("【支付异常】订单[{}]已关闭但用户已付款！支付宝流水号：{}，金额：{}，需人工介入退款或重新激活订单",
-                    orderSn, asyncVo.getTradeNo(), asyncVo.getTotalAmount());
-            return "failure";
+            // 订单已被关单 -> 自动原路退款！
+            log.warn("【关单临界点支付异常】订单[{}]已关闭但用户完成支付，触发自动退款...", orderSn);
+            boolean refundSuccess = refundAlipayTrade(orderSn, asyncVo.getTradeNo(), payAmountFromAlipay, "订单超时关单，系统自动退款");
+            if (refundSuccess) {
+                asyncVo.setTradeStatus("REFUNDED");
+                savePaymentInfo(asyncVo);
+                return "success"; // 退款成功，停止支付宝通知
+            } else {
+                return "failure"; // 退款失败，让支付宝重试通知
+            }
         }
         //更新订单状态
         boolean updateSuccess = this.update(
@@ -598,6 +616,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
 
         return "success";
 
+    }
+
+    private boolean refundAlipayTrade(String orderSn, String tradeNo, BigDecimal payAmountFromAlipay, String s) {
+        try {
+            AlipayConfig alipayConfig=new AlipayConfig();
+            alipayConfig.setAppId(alipayConfigProperties.getAppId());
+            alipayConfig.setPrivateKey(alipayConfigProperties.getMerchantprivatekey());
+            alipayConfig.setAlipayPublicKey(alipayConfigProperties.getAlipayPublicKey());
+            alipayConfig.setServerUrl(alipayConfigProperties.getGatewayUrl());
+            AlipayClient alipayClient = new DefaultAlipayClient(alipayConfig);
+            AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
+            AlipayTradeRefundModel model=new AlipayTradeRefundModel();
+            model.setRefundAmount(String.valueOf(payAmountFromAlipay));
+            model.setOutTradeNo(orderSn);
+            request.setBizModel(model);
+            AlipayTradeRefundResponse response = alipayClient.execute(request);
+            return response.isSuccess();
+        } catch (Exception e) {
+            log.error("订单[{}]原路退款调用异常", orderSn, e);
+            return false;
+        }
     }
 
     private void savePaymentInfo(PayAsyncVo asyncVo) {
