@@ -1,7 +1,15 @@
 package com.xjz.gulimall.order.service.impl;
 
 import com.alipay.api.AlipayApiException;
+import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayConfig;
+import com.alipay.api.DefaultAlipayClient;
+import com.alipay.api.domain.AlipayTradeCloseModel;
+import com.alipay.api.domain.AlipayTradeQueryModel;
+import com.alipay.api.request.AlipayTradeCloseRequest;
+import com.alipay.api.request.AlipayTradeQueryRequest;
+import com.alipay.api.response.AlipayTradeCloseResponse;
+import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xjz.gulimall.order.config.AlipayConfigProperties;
@@ -21,6 +29,8 @@ import com.xjz.gulimall.order.vo.*;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.platform.commons.function.Try;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -90,6 +100,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private PaymentInfoService paymentInfoService;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -370,23 +382,97 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
 
     @Override
     public void releaseOrder(String orderSn) {
-        //根据orderSn查询订单状态
-        Integer orderStatus = getOrderStatus(orderSn);
-        //如果订单状态为待付款---0，就将订单状态设置为已关闭----4
-        if(orderStatus.equals(0))
-        {
-            OrderEntity order = getOne(new QueryWrapper<OrderEntity>().eq("order_sn",orderSn));
-            order.setStatus(4);
-            QueryWrapper<OrderEntity> queryWrapper=new QueryWrapper<>();
-            queryWrapper.eq("order_sn",orderSn).eq("status",0);
-            boolean update = update(order, queryWrapper);
+        //抢分布式锁
+        String lockKey="order:lock:"+orderSn;
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean isLocked=false;
+        try {
+            isLocked = lock.tryLock(0, TimeUnit.SECONDS);
+            if(!isLocked)
+            {
+                //没抢到
+                return;
+            }
+            //核心业务
+            OrderEntity order = getOne(new QueryWrapper<OrderEntity>().eq("order_sn", orderSn));
+            if (order == null || !order.getStatus().equals(0)) {
+                return; // 订单不存在或非待付款状态，跳过
+            }
+            //关单前主动查询支付宝状态
+            String alipayTradeStatus = checkAlipayPayStatus(orderSn);
+            if ("TRADE_SUCCESS".equals(alipayTradeStatus) || "TRADE_FINISHED".equals(alipayTradeStatus)) {
+                log.info("关单反查：订单[{}]在支付宝端已支付成功！更新状态为已付款，取消关单", orderSn);
+                this.update(new UpdateWrapper<OrderEntity>()
+                        .set("status", 1)
+                        .set("payment_time", new Date())
+                        .eq("order_sn", orderSn)
+                        .eq("status", 0));
+                return;
+            }
+            // 2. 否则，主动关闭支付宝预创建订单，防止关单后，用户还继续进行付款。
+            closeAlipayTrade(orderSn);
+            //关单
+            OrderEntity updateOrder = new OrderEntity();
+            updateOrder.setStatus(4);
+            boolean update = update(updateOrder, new QueryWrapper<OrderEntity>().eq("order_sn", orderSn).eq("status", 0));
             if (update) {
-                log.info("关单处理：订单[{}]超时未支付，已关闭", orderSn);
-                // TODO 后续可在此发送订单关闭事件（如释放优惠券等）
-            } else {
-                log.info("关单处理：订单[{}]不存在或已非待付款状态，跳过关单", orderSn);
+                log.info("关单处理：订单[{}]超时未支付，已成功关闭", orderSn);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (isLocked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
+    }
+
+    private void closeAlipayTrade(String orderSn) throws AlipayApiException {
+        try {
+            AlipayConfig alipayConfig=new AlipayConfig();
+            alipayConfig.setAppId(alipayConfigProperties.getAppId());
+            alipayConfig.setPrivateKey(alipayConfigProperties.getMerchantprivatekey());
+            alipayConfig.setAlipayPublicKey(alipayConfigProperties.getAlipayPublicKey());
+            alipayConfig.setServerUrl(alipayConfigProperties.getGatewayUrl());
+            AlipayClient alipayClient = new DefaultAlipayClient(alipayConfig);
+            AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
+            AlipayTradeCloseModel model = new AlipayTradeCloseModel();
+            model.setOutTradeNo(orderSn);
+            request.setBizModel(model);
+            AlipayTradeCloseResponse response = alipayClient.execute(request);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 主动反查支付宝端订单支付状态 (alipay.trade.query)
+     * @param orderSn
+     * @return
+     */
+    private String checkAlipayPayStatus(String orderSn) {
+        try {
+            AlipayConfig alipayConfig=new AlipayConfig();
+            alipayConfig.setAppId(alipayConfigProperties.getAppId());
+            alipayConfig.setPrivateKey(alipayConfigProperties.getMerchantprivatekey());
+            alipayConfig.setAlipayPublicKey(alipayConfigProperties.getAlipayPublicKey());
+            alipayConfig.setServerUrl(alipayConfigProperties.getGatewayUrl());
+            AlipayClient alipayClient = new DefaultAlipayClient(alipayConfig);
+            AlipayTradeQueryRequest request=new AlipayTradeQueryRequest();
+            AlipayTradeQueryModel model = new AlipayTradeQueryModel();
+            model.setOutTradeNo(orderSn);
+            request.setBizModel(model);
+            AlipayTradeQueryResponse response = alipayClient.execute(request);
+            if(response.isSuccess())
+            {
+                return response.getTradeStatus();
+            }
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e);
+        }
+        return "UNKNOWN";
     }
 
     @Override
