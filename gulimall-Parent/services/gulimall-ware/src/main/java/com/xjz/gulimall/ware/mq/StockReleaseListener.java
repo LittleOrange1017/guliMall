@@ -7,11 +7,13 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import to.OrderStockTo;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -19,32 +21,37 @@ import java.util.Map;
 public class StockReleaseListener {
 
     private static final int MAX_RETRY = 3;
+    private static final String REDIS_RETRY_KEY_PREFIX = "stock:release:retry:";
 
     @Autowired
     private WareSkuService wareSkuService;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @RabbitHandler
     public void handleStockLockedRelease(OrderStockTo orderStockTo, Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
+        String orderSn = orderStockTo.getOrderSn();
+        String redisRetryKey=REDIS_RETRY_KEY_PREFIX+orderSn;
         Map<String, Object> headers = message.getMessageProperties().getHeaders();
-        int retryCount = 0;
-        Object retryObj = headers.get("retryCount");
-        if (retryObj instanceof Number) {
-            retryCount = ((Number) retryObj).intValue();
-        }
-
         try {
             wareSkuService.unLockStock(orderStockTo);
             channel.basicAck(deliveryTag, false);
+            stringRedisTemplate.delete(redisRetryKey);
         } catch (Exception e) {
-            if (retryCount < MAX_RETRY) {
-                log.warn("库存解锁失败，订单[{}]，第{}次重试，消息重新入队", orderStockTo.getOrderSn(), retryCount + 1, e);
-                message.getMessageProperties().getHeaders().put("retryCount", retryCount + 1);
+            //解锁异常
+            Long currentRetryCount = stringRedisTemplate.opsForValue().increment(redisRetryKey);
+            // 给 Redis Key 设置 1 小时 TTL，防止垃圾 Key 长期残留占用内存
+            stringRedisTemplate.expire(redisRetryKey, 1, TimeUnit.HOURS);
+            if(currentRetryCount!=null&&currentRetryCount<=MAX_RETRY)
+            {
+                //还继续重试
                 channel.basicNack(deliveryTag, false, true);
-            } else {
-                log.error("库存解锁失败，订单[{}]，已达最大重试次数{}，ack跳过，等待兜底对账任务补偿",
-                        orderStockTo.getOrderSn(), MAX_RETRY, e);
+            }
+            else
+            {
                 channel.basicAck(deliveryTag, false);
+                stringRedisTemplate.delete(redisRetryKey);
             }
         }
     }
