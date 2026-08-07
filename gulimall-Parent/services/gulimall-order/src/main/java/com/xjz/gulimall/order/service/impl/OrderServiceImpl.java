@@ -548,74 +548,80 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         String lockKey = "order:lock:" + orderSn;
         RLock lock = redissonClient.getLock(lockKey);
         boolean isLocked = false;
-        isLocked = lock.tryLock(3, TimeUnit.SECONDS);
-        if (!isLocked) {
-            log.error("订单[{}]支付回调获取分布式锁超时，返回 failure 触发支付宝后续重试", orderSn);
-            return "failure";
-        }
-        //校验appId
-        if(!alipayConfigProperties.getAppId().equals(asyncVo.getAppId()))
-        {
-            log.error("【支付回调校验失败】AppID 不匹配，收到：{}", asyncVo.getAppId());
-            return "failure";
-        }
-        //【防线二：校验交易状态】状态如果不是 TRADE_SUCCESS 或 TRADE_FINISHED ，就返回success，让支付宝停止异步通知
-        String tradeStatus = asyncVo.getTradeStatus();
-        if(!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus))
-        {
-            return "success";
-        }
-        //到这里，代表用户已经付过钱了
-        //校验订单存在性
-        OrderEntity order=this.getOrderByOrderSn(orderSn);
-        if(order==null)
-        {
-            log.error("【支付回调校验失败】订单不存在，订单号：{}", orderSn);
-            return "failure";
-        }
-        //校验订单金额
-        BigDecimal payAmountFromAlipay = new BigDecimal(asyncVo.getTotalAmount());
-        if (order.getPayAmount().compareTo(payAmountFromAlipay) != 0) {
-            log.error("【支付回调校验失败】订单金额不一致！数据库：{}，支付宝通知：{}",
-                    order.getPayAmount(), payAmountFromAlipay);
-            return "failure";
-        }
-        // 4.【防线三：状态机幂等性检查】
-        // 订单状态：0->待付款；1->已付款；2->已发货；3->已完成；4->已关闭
-        if (order.getStatus().equals(1)) {
-            return "success";
-        }
-        if (order.getStatus().equals(4)) {
-            // 订单已被关单 -> 自动原路退款！
-            log.warn("【关单临界点支付异常】订单[{}]已关闭但用户完成支付，触发自动退款...", orderSn);
-            boolean refundSuccess = refundAlipayTrade(orderSn, asyncVo.getTradeNo(), payAmountFromAlipay, "订单超时关单，系统自动退款");
-            if (refundSuccess) {
-                asyncVo.setTradeStatus("REFUNDED");
+        try {
+            isLocked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+            if (!isLocked) {
+                log.error("订单[{}]支付回调获取分布式锁超时，返回 failure 触发支付宝后续重试", orderSn);
+                return "failure";
+            }
+            //校验appId
+            if(!alipayConfigProperties.getAppId().equals(asyncVo.getAppId()))
+            {
+                log.error("【支付回调校验失败】AppID 不匹配，收到：{}", asyncVo.getAppId());
+                return "failure";
+            }
+            //【防线二：校验交易状态】状态如果不是 TRADE_SUCCESS 或 TRADE_FINISHED ，就返回success，让支付宝停止异步通知
+            String tradeStatus = asyncVo.getTradeStatus();
+            if(!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus))
+            {
+                return "success";
+            }
+            //到这里，代表用户已经付过钱了
+            //校验订单存在性
+            OrderEntity order=this.getOrderByOrderSn(orderSn);
+            if(order==null)
+            {
+                log.error("【支付回调校验失败】订单不存在，订单号：{}", orderSn);
+                return "failure";
+            }
+            //校验订单金额
+            BigDecimal payAmountFromAlipay = new BigDecimal(asyncVo.getTotalAmount());
+            if (order.getPayAmount().compareTo(payAmountFromAlipay) != 0) {
+                log.error("【支付回调校验失败】订单金额不一致！数据库：{}，支付宝通知：{}",
+                        order.getPayAmount(), payAmountFromAlipay);
+                return "failure";
+            }
+            // 4.【防线三：状态机幂等性检查】
+            // 订单状态：0->待付款；1->已付款；2->已发货；3->已完成；4->已关闭
+            if (order.getStatus().equals(1)) {
+                return "success";
+            }
+            if (order.getStatus().equals(4)) {
+                // 订单已被关单 -> 自动原路退款！
+                log.warn("【关单临界点支付异常】订单[{}]已关闭但用户完成支付，触发自动退款...", orderSn);
+                boolean refundSuccess = refundAlipayTrade(orderSn, asyncVo.getTradeNo(), payAmountFromAlipay, "订单超时关单，系统自动退款");
+                if (refundSuccess) {
+                    asyncVo.setTradeStatus("REFUNDED");
+                    savePaymentInfo(asyncVo);
+                    return "success"; // 退款成功，停止支付宝通知
+                } else {
+                    return "failure"; // 退款失败，让支付宝重试通知
+                }
+            }
+            //更新订单状态
+            boolean updateSuccess = this.update(
+                    new UpdateWrapper<OrderEntity>()
+                            .set("status", 1)
+                            .set("payment_time", asyncVo.getGmtPayment())
+                            .eq("order_sn", orderSn)
+                            .eq("status", 0)
+            );
+            if (updateSuccess) {
                 savePaymentInfo(asyncVo);
-                return "success"; // 退款成功，停止支付宝通知
+                log.info("【支付成功】订单 {} 状态更新为 [已付款]！流水号：{}", orderSn, asyncVo.getTradeNo());
             } else {
-                return "failure"; // 退款失败，让支付宝重试通知
+                log.error("【支付异常】订单[{}]状态更新失败，当前状态：{}，支付宝流水号：{}",
+                        orderSn, order.getStatus(), asyncVo.getTradeNo());
+                return "failure";
+            }
+
+            return "success";
+
+        } finally {
+            if (isLocked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
-        //更新订单状态
-        boolean updateSuccess = this.update(
-                new UpdateWrapper<OrderEntity>()
-                        .set("status", 1)
-                        .set("payment_time", asyncVo.getGmtPayment())
-                        .eq("order_sn", orderSn)
-                        .eq("status", 0)
-        );
-        if (updateSuccess) {
-            savePaymentInfo(asyncVo);
-            log.info("【支付成功】订单 {} 状态更新为 [已付款]！流水号：{}", orderSn, asyncVo.getTradeNo());
-        } else {
-            log.error("【支付异常】订单[{}]状态更新失败，当前状态：{}，支付宝流水号：{}",
-                    orderSn, order.getStatus(), asyncVo.getTradeNo());
-            return "failure";
-        }
-
-        return "success";
-
     }
 
     private boolean refundAlipayTrade(String orderSn, String tradeNo, BigDecimal payAmountFromAlipay, String s) {
