@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RabbitListener(queues = "order.release.order.queue")
 public class OrderReleaseListener {
-    private static final String REDIS_RETRY_KEY_PREFIX = "stock:release:retry:";
+    private static final String REDIS_RETRY_KEY_PREFIX = "order:release:retry:";
     private static final int MAX_RETRY=3;
     @Autowired
     private OrderService orderService;
