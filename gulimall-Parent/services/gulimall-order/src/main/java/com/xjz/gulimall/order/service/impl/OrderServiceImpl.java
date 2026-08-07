@@ -599,15 +599,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 }
             }
             //更新订单状态
-            boolean updateSuccess = this.update(
-                    new UpdateWrapper<OrderEntity>()
-                            .set("status", 1)
-                            .set("payment_time", asyncVo.getGmtPayment())
-                            .eq("order_sn", orderSn)
-                            .eq("status", 0)
-            );
-            if (updateSuccess) {
-                savePaymentInfo(asyncVo);
+            Boolean updateSuccess = transactionTemplate.execute(status -> {
+                boolean updated = this.update(
+                        new UpdateWrapper<OrderEntity>()
+                                .set("status", 1)
+                                .set("payment_time", asyncVo.getGmtPayment())
+                                .eq("order_sn", orderSn)
+                                .eq("status", 0)
+                );
+                if (updated) {
+                    savePaymentInfo(asyncVo);
+                }
+                return updated;
+            });
+            if (Boolean.TRUE.equals(updateSuccess)) {
                 log.info("【支付成功】订单 {} 状态更新为 [已付款]！流水号：{}", orderSn, asyncVo.getTradeNo());
             } else {
                 log.error("【支付异常】订单[{}]状态更新失败，当前状态：{}，支付宝流水号：{}",
