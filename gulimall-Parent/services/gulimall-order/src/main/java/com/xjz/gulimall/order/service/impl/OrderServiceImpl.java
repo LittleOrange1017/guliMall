@@ -45,6 +45,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import to.OrderStockTo;
@@ -87,6 +88,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     private AlipayConfigProperties alipayConfigProperties;
     @Autowired
     private PaymentInfoService paymentInfoService;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -175,14 +178,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
     }
 
     @Override
-    @Transactional
     public OrderSubmitResVo submitOrder(OrderSubmitDto orderSubmitDto) throws ExecutionException, InterruptedException {
         MemberVo memberVo = LoginUserInterceptor.loginUser.get();
-        OrderSubmitResVo resVo=new OrderSubmitResVo();
-        //验证token
+        OrderSubmitResVo resVo = new OrderSubmitResVo();
+
+        // =========================================================================
+        // 阶段一：防重令牌校验（纯 Redis 操作，无 DB 事务）
+        // =========================================================================
         String orderToken = orderSubmitDto.getOrderToken();
-        String redisKey="order:token:"+memberVo.getUserId().toString();
-        //lua脚本
+        String redisKey = "order:token:" + memberVo.getUserId().toString();
         String luaScript =
                 "if redis.call('get', KEYS[1]) == ARGV[1] then " +
                         "    return redis.call('del', KEYS[1]) " +
@@ -193,124 +197,156 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         redisScript.setScriptText(luaScript);
         redisScript.setResultType(Long.class);
         Long result = redisTemplate.execute(redisScript, Collections.singletonList(redisKey), orderToken);
-        if(result==null||result!=1L)
-        {
+        if (result == null || result != 1L) {
             resVo.setCode(1);
             resVo.setMsg("订单令牌无效或已过期，请刷新页面重新下单");
             return resVo;
         }
-        OrderEntity order=new OrderEntity();
-        String orderSn = memberVo.getUserId().toString()
-                + System.currentTimeMillis()
-                + (int)(Math.random() * 1000);
-        order.setOrderSn(orderSn);
-        order.setMemberId(memberVo.getUserId());
-        order.setMemberUsername(memberVo.getUsername());
+
+        // =========================================================================
+        // 阶段二：RPC 远程数据准备与内存验算（无 DB 事务，绝不霸占数据库连接池）
+        // =========================================================================
+        // 1. 远程查询购物车勾选项
         List<OrderItemVo> orderItemVos = cartFeign.getCartItems(memberVo.getUserId());
         if (orderItemVos == null || orderItemVos.isEmpty()) {
             throw new RuntimeException("购物车为空，无法下单");
         }
+
+        // 2. 验价与金额计算
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (OrderItemVo orderItemVo : orderItemVos) {
             totalAmount = totalAmount.add(orderItemVo.getTotalPrice());
         }
-        order.setTotalAmount(totalAmount);
-
-        BigDecimal freightAmount = new BigDecimal(10);
-        // TODO: 后续根据收货地址查询真实运费替换此处
+        BigDecimal freightAmount = new BigDecimal("10.00"); // TODO: 后续接仓储计算真实运费
         BigDecimal payAmount = totalAmount.add(freightAmount);
-        order.setPayAmount(payAmount);
+
         if (orderSubmitDto.getPayPrice().compareTo(payAmount) != 0) {
-            throw new RuntimeException("验价不通过");
+            throw new RuntimeException("订单商品价格发生变化，请刷新页面后重新提交");
         }
+
+        // 3. 生成订单号与主表对象装配
+        String orderSn = memberVo.getUserId().toString()
+                + System.currentTimeMillis()
+                + (int)(Math.random() * 1000);
+
+        OrderEntity order = new OrderEntity();
+        order.setOrderSn(orderSn);
+        order.setMemberId(memberVo.getUserId());
+        order.setMemberUsername(memberVo.getUsername());
+        order.setTotalAmount(totalAmount);
+        order.setPayAmount(payAmount);
+        order.setFreightAmount(freightAmount);
+        order.setPromotionAmount(BigDecimal.ZERO);
+        order.setUseIntegration(0);
         order.setCreateTime(new Date());
         order.setAutoConfirmDay(7);
         order.setConfirmStatus(0);
         order.setDeleteStatus(0);
-        order.setStatus(0);
+        order.setStatus(0); // 待付款
         order.setSourceType(0);
         order.setPayType(orderSubmitDto.getPayType());
-        order.setFreightAmount(BigDecimal.ZERO);
-        order.setPromotionAmount(BigDecimal.ZERO);
-        order.setUseIntegration(0);
-        MemberAddressVo address = memberFeign.addressList(memberVo.getUserId())
-                .stream()
-                .filter(a -> a.getId().equals(orderSubmitDto.getAddrId()))
-                .findFirst()
-                .orElse(null);
-        if (address != null) {
-            order.setReceiverName(address.getName());
-            order.setReceiverPhone(address.getPhone());
-            order.setReceiverPostCode(address.getPostCode());
-            order.setReceiverProvince(address.getProvince());
-            order.setReceiverCity(address.getCity());
-            order.setReceiverRegion(address.getRegion());
-            order.setReceiverDetailAddress(address.getDetailAddress());
-        }
 
-        this.save(order);
-        List<OrderItemEntity> orderItemEntities=new ArrayList<>();
-        if(orderItemVos!=null)
-        {
-            for(OrderItemVo orderItemVo:orderItemVos)
-            {
-                OrderItemEntity orderItem=new OrderItemEntity();
-                orderItem.setOrderSn(orderSn);
-                orderItem.setSkuId(orderItemVo.getSkuId());
-                orderItem.setRealAmount(orderItemVo.getTotalPrice());
-                orderItem.setOrderId(order.getId());
-                orderItem.setSkuAttrsVals(
-                        orderItemVo.getSkuAttr() != null ? String.join(",", orderItemVo.getSkuAttr()) : null);
-                orderItem.setGiftIntegration(0);
-                orderItem.setGiftGrowth(0);
-                orderItem.setSkuPic(orderItemVo.getImage());
-                orderItem.setSkuName(orderItemVo.getTitle());
-                orderItem.setSkuQuantity(orderItemVo.getCount());
-                orderItemEntities.add(orderItem);
+        // 4. 远程查询收货地址
+        List<MemberAddressVo> addresses = memberFeign.addressList(memberVo.getUserId());
+        if (addresses != null) {
+            MemberAddressVo address = addresses.stream()
+                    .filter(a -> a.getId().equals(orderSubmitDto.getAddrId()))
+                    .findFirst()
+                    .orElse(null);
+            if (address != null) {
+                order.setReceiverName(address.getName());
+                order.setReceiverPhone(address.getPhone());
+                order.setReceiverPostCode(address.getPostCode());
+                order.setReceiverProvince(address.getProvince());
+                order.setReceiverCity(address.getCity());
+                order.setReceiverRegion(address.getRegion());
+                order.setReceiverDetailAddress(address.getDetailAddress());
             }
-            orderItemService.saveBatch(orderItemEntities);
         }
 
-        //锁定库存RPC调用
-        OrderStockTo orderStockTo=new OrderStockTo();
+        // 5. 构建订单项实体列表
+        List<OrderItemEntity> orderItemEntities = new ArrayList<>();
+        for (OrderItemVo orderItemVo : orderItemVos) {
+            OrderItemEntity orderItem = new OrderItemEntity();
+            orderItem.setOrderSn(orderSn);
+            orderItem.setSkuId(orderItemVo.getSkuId());
+            orderItem.setRealAmount(orderItemVo.getTotalPrice());
+            orderItem.setSkuAttrsVals(
+                    orderItemVo.getSkuAttr() != null ? String.join(",", orderItemVo.getSkuAttr()) : null);
+            orderItem.setGiftIntegration(0);
+            orderItem.setGiftGrowth(0);
+            orderItem.setSkuPic(orderItemVo.getImage());
+            orderItem.setSkuName(orderItemVo.getTitle());
+            orderItem.setSkuQuantity(orderItemVo.getCount());
+            orderItemEntities.add(orderItem);
+        }
+
+        // 6. 构造库存锁定传输对象
+        OrderStockTo orderStockTo = new OrderStockTo();
         orderStockTo.setOrderSn(orderSn);
-        orderStockTo.setOrderId(order.getId());
         orderStockTo.setLocks(orderItemVos.stream().map(item -> {
             SkuStockLockedTo locked = new SkuStockLockedTo();
             locked.setSkuId(item.getSkuId());
             locked.setSkuNum(item.getCount());
             return locked;
         }).collect(Collectors.toList()));
-        R lockResult = wareFeign.lockStock(orderStockTo);
-        if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
-            throw new RuntimeException(lockResult != null ? lockResult.get("msg").toString() : "锁库存远程调用失败");
-        }
 
-        //删除购物车数据
-        String skuIdsStr = orderItemVos.stream()
-                .map(item -> item.getSkuId().toString())
-                .collect(Collectors.joining(","));
-        R deleteResult = cartFeign.deleteCartItems(skuIdsStr);
-        if (deleteResult == null || !Integer.valueOf(0).equals(deleteResult.get("code"))) {
-            log.warn("订单[{}]删除购物车失败，可能影响用户体验，需人工核查", orderSn);
-        }
-
-        //本地事务提交后的afterCommit回调，向普通交换机发送三条延迟消息
-        final OrderStockTo stockMsgTo=orderStockTo;
-        final String orderSnFinal=orderSn;
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try{
-                    //将库存锁定的消息发往交换机
-                    rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,OrderMqConstants.STOCK_LOCK_ROUTING_KEY,stockMsgTo);
-                    //将订单超时关闭的消息发往交换机
-                    rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,OrderMqConstants.ORDER_CREATE_ROUTING_KEY,orderSnFinal);
-                } catch (Exception e) {
-                    log.error("订单[{}]延迟消息发送失败，需人工补偿或写入本地消息表重投", orderSnFinal, e);
-                }
+        // =========================================================================
+        // 阶段三：核心落库与锁库存（小事务控制，毫秒级释放 DB 连接）
+        // =========================================================================
+        transactionTemplate.executeWithoutResult(status -> {
+            // 1. 本地 DB 保存订单主表与订单项表
+            this.save(order);
+            for (OrderItemEntity orderItem : orderItemEntities) {
+                orderItem.setOrderId(order.getId());
             }
+            orderItemService.saveBatch(orderItemEntities);
+
+            // 2. 远程锁定库存
+            orderStockTo.setOrderId(order.getId());
+            R lockResult = wareFeign.lockStock(orderStockTo);
+            if (lockResult == null || !Integer.valueOf(0).equals(lockResult.get("code"))) {
+                String msg = (lockResult != null && lockResult.get("msg") != null)
+                        ? lockResult.get("msg").toString() : "锁库存远程调用失败";
+                // 抛出 RuntimeException 触发 TransactionTemplate 自动回滚本地 DB
+                throw new RuntimeException(msg);
+            }
+
+            // 3. 注册本地事务提交成功后的回调：发送 MQ 延时关单与解锁消息
+            final String finalOrderSn = orderSn;
+            final OrderStockTo finalStockMsg = orderStockTo;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        // 发送库存解锁延时消息
+                        rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,
+                                OrderMqConstants.STOCK_LOCK_ROUTING_KEY, finalStockMsg);
+                        // 发送订单超时关闭延时消息
+                        rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,
+                                OrderMqConstants.ORDER_CREATE_ROUTING_KEY, finalOrderSn);
+                    } catch (Exception e) {
+                        log.error("【重大异常】订单[{}]事务已提交但 MQ 延时消息发送失败！依赖定时任务兜底对账", finalOrderSn, e);
+                    }
+                }
+            });
         });
+
+        // =========================================================================
+        // 阶段四：后置次要业务（事务外异步/非阻塞清理购物车，绝不影响下单主流程）
+        // =========================================================================
+        try {
+            String skuIdsStr = orderItemVos.stream()
+                    .map(item -> item.getSkuId().toString())
+                    .collect(Collectors.joining(","));
+            R deleteResult = cartFeign.deleteCartItems(skuIdsStr);
+            if (deleteResult == null || !Integer.valueOf(0).equals(deleteResult.get("code"))) {
+                log.warn("订单[{}]删除购物车失败，等待用户手动清理或后台异步补偿", orderSn);
+            }
+        } catch (Exception e) {
+            log.warn("订单[{}]清理购物车发生网络异常，跳过，不影响下单结果: {}", orderSn, e.getMessage());
+        }
+
         resVo.setOrder(order);
         resVo.setCode(0);
         resVo.setMsg("下单成功");
