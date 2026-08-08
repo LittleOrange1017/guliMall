@@ -2,8 +2,10 @@ package com.xjz.gulimall.seckill.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.xjz.gulimall.seckill.constants.SeckillRedisConstants;
+import com.xjz.gulimall.seckill.feign.ProductFeign;
 import com.xjz.gulimall.seckill.service.SeckillService;
 import com.xjz.gulimall.seckill.feign.CouponFeign;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -11,9 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import to.Laste3DaysSessionTo;
 import to.SeckillSkuRedisTo;
+import to.SkuInfoTo;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +27,8 @@ public class SeckillServiceImpl implements SeckillService {
     private CouponFeign couponFeign;
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private ProductFeign productFeign;
 
     @Override
     public List<Laste3DaysSessionTo> query3DaysSession() {
@@ -78,5 +85,43 @@ public class SeckillServiceImpl implements SeckillService {
             }
         }
         return null;
+    }
+
+    @Override
+    public SeckillSkuRedisTo getSkuSeckillInfo(Long skuId) {
+        BoundHashOperations<String, String, String> hashOps = redisTemplate.boundHashOps(SeckillRedisConstants.SECKILL_SKUS);
+        Set<String> keys = hashOps.keys();
+        //匹配后缀为_skuId，例如1_10匹配_10
+        String regx = "\\d_[" + skuId + "]";
+        for (String key : keys) {
+            if (Pattern.matches(regx, key) || key.endsWith("_" + skuId)) {
+                //匹配到了对应的key，查询出对应的value
+                String json = hashOps.get(key);
+                SeckillSkuRedisTo redisTo = JSON.parseObject(json, SeckillSkuRedisTo.class);
+                if(redisTo!=null)
+                {
+                    long now = System.currentTimeMillis();
+                    Long startTime = redisTo.getStartTime();
+                    Long endTime = redisTo.getEndTime();
+                    //如果当前时间是秒杀进行时
+                    if(now>=startTime&&now<=endTime)
+                    {
+                        return redisTo;
+                    }
+                    //如果秒杀尚未开始，隐藏随机码
+                    else if(now < startTime)
+                    {
+                        redisTo.setRandomCode(null);
+                        return redisTo;
+                    }
+                    // 3. 秒杀已经结束：返回 null
+                    else {
+                        return null;
+                    }
+                }
+            }
+        }
+        return null;
+
     }
 }

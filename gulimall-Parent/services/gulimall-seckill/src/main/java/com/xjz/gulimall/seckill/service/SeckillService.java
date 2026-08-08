@@ -11,4 +11,6 @@ public interface SeckillService {
     List<Laste3DaysSessionTo> query3DaysSession();
 
     List<SeckillSkuRedisTo> getCurrentSeckillSkus();
+
+    SeckillSkuRedisTo getSkuSeckillInfo(Long skuId);
 }

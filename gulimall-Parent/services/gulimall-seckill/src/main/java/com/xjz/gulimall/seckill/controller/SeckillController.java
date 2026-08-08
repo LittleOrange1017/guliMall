@@ -4,6 +4,7 @@ import com.xjz.gulimall.seckill.service.SeckillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 import to.SeckillSkuRedisTo;
 import utils.R;
@@ -22,6 +23,15 @@ public class SeckillController {
     @ResponseBody
     public List<SeckillSkuRedisTo> getCurrentSeckillSkus() {
         return seckillService.getCurrentSeckillSkus();
+    }
+
+    /**
+     * 场景 2：根据 skuId 获取商品的秒杀详情（用于详情页切面）
+     */
+    @GetMapping("/sku/seckill/{skuId}")
+    @ResponseBody
+    public SeckillSkuRedisTo getSkuSeckillInfo(@PathVariable("skuId") Long skuId) {
+        return seckillService.getSkuSeckillInfo(skuId);
     }
 
 }
