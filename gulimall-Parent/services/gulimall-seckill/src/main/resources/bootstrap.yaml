@@ -1,0 +1,42 @@
+spring:
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30000
+      key-prefix: CACHE_
+      use-key-prefix: false
+  application:
+    name: service-seckill
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+        file-extension: yaml
+        group: service-seckill
+        extension-configs:
+          - data-id: mybatis.yaml
+            refresh: true
+            group: COMMON_GROUP
+          - data-id: redis-common.yaml
+            refresh: true
+            group: COMMON_GROUP
+          - data-id: thread.yaml
+            refresh: true
+            group: COMMON_GROUP
+          - data-id: session.yaml
+            refresh: true
+            group: COMMON_GROUP
+          - data-id: async-config.yaml
+            refresh: true
+            group: service-seckill
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: dev-namespace-uuid
+  thymeleaf:
+    cache: false
+logging:
+  level:
+    com.xjz.gulimall: info

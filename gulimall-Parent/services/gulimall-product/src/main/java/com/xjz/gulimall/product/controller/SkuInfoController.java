@@ -2,8 +2,10 @@ package com.xjz.gulimall.product.controller;
 
 import com.xjz.gulimall.product.entity.SkuInfoEntity;
 import com.xjz.gulimall.product.service.SkuInfoService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import to.SkuInfoTo;
 import to.SkuWeightTo;
 import utils.PageUtils;
 import utils.R;
@@ -93,6 +95,13 @@ public class SkuInfoController {
         return skuInfoService.getSkuWeightBySkuIds(skuWeightTo.getSkuIds());
     }
 
-
+    @PostMapping("/feign/getSkuInfo/{skuId}")
+    public SkuInfoTo getFeignSkuInfo(@PathVariable("skuId") Long skuId){
+        SkuInfoEntity skuInfo = skuInfoService.getById(skuId);
+        SkuInfoTo skuInfoTo=new SkuInfoTo();
+        BeanUtils.copyProperties(skuInfo,skuInfoTo);
+        skuInfoTo.setSaleCount(0L);
+        return skuInfoTo;
+    }
 
 }

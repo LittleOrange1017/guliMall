@@ -22,6 +22,7 @@
         <module>gulimall-productB</module>
         <module>gulimall-productA</module>
         <module>gulimall-cart</module>
+        <module>gulimall-seckill</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <dependencies>

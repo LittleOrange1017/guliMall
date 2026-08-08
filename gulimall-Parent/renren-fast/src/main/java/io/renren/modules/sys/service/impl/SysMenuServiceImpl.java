@@ -75,6 +75,10 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	 * @return
 	 */
 	private List<SysMenuEntity> getMenuList(List<Long> menuIdList) {
+		// 非管理员且未分配任何菜单时，直接返回空列表，避免拼出非法的 IN () 语句
+		if (menuIdList != null && menuIdList.isEmpty()) {
+			return new ArrayList<>();
+		}
 		// 查询拥有的所有菜单
 		List<SysMenuEntity> menus = this.baseMapper.selectList(new QueryWrapper<SysMenuEntity>()
 				.in(Objects.nonNull(menuIdList), "menu_id", menuIdList).in("type", 0, 1));

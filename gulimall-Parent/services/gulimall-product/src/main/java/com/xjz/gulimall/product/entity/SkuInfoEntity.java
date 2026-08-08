@@ -31,7 +31,7 @@ public class SkuInfoEntity implements Serializable {
 	 */
 	private Long spuId;
 	/**
-	 * 
+	 *
 	 */
 	@TableField(exist = false)
 	private String skuCode;
