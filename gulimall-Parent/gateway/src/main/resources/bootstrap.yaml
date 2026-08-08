@@ -44,7 +44,13 @@ spring:
           predicates:
             - Path=/api/ware/**
           filters:
-            - RewritePath=/api/ware/(?<segment>.*), /ware/$\{segment}
+            - RewritePath=/api/ware/(?<segment>.*), /$\{segment}
+        - id: seckill_route
+          uri: lb://service-seckill
+          predicates:
+            - Path=/api/seckill/**
+          filters:
+            - RewritePath=/api/seckill/(?<segment>.*), /$\{segment}
         - id: admin_route
           uri: lb://service-renrenfast
           predicates:
