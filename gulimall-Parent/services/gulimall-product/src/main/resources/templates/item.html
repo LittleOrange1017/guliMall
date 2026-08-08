@@ -38,6 +38,77 @@
                 width: 600px;
                 color: #666;
             }
+            /* ===== 秒杀切面样式（仅作用于动态插入的秒杀元素） ===== */
+            #seckillBanner {
+                background: #fff2f0;
+                border: 1px solid #f3c2c2;
+                padding: 8px 12px;
+                margin-bottom: 10px;
+                font-size: 14px;
+                color: #333;
+            }
+            #seckillBanner .seckill-tag {
+                background: #e01222;
+                color: #fff;
+                padding: 2px 8px;
+                border-radius: 2px;
+                margin-right: 10px;
+                font-size: 12px;
+            }
+            #seckillBanner .seckill-price {
+                font-size: 24px;
+                font-weight: 700;
+                color: #e01222;
+                margin-right: 10px;
+            }
+            #seckillBanner .seckill-origin-price {
+                color: #999;
+                text-decoration: line-through;
+                margin-right: 10px;
+            }
+            #seckillBanner .seckill-countdown span {
+                display: inline-block;
+                min-width: 26px;
+                background: #440106;
+                color: #fff;
+                text-align: center;
+                border-radius: 2px;
+                padding: 2px 4px;
+                margin: 0 2px;
+                font-weight: 700;
+            }
+            /* 状态C：价格区原价划线 */
+            .seckill-origin-price-off {
+                text-decoration: line-through;
+                color: #999 !important;
+            }
+            #seckillBtnWrap { display: inline-block; }
+            #seckillBuyBtn {
+                display: inline-block;
+                height: 46px;
+                line-height: 46px;
+                padding: 0 46px;
+                background: #e01222;
+                color: #fff;
+                font-size: 18px;
+                text-align: center;
+                cursor: pointer;
+                border-radius: 2px;
+            }
+            #seckillBuyBtn:hover { background: #c81623; color: #fff; text-decoration: none; }
+            /* 状态B：禁用态预告按钮 */
+            #seckillWaitBtn {
+                display: inline-block;
+                height: 46px;
+                line-height: 46px;
+                padding: 0 46px;
+                background: #b5b5b5;
+                color: #fff;
+                font-size: 18px;
+                text-align: center;
+                cursor: not-allowed;
+                border-radius: 2px;
+            }
 		</style>
 	</head>
 	<body>
@@ -1366,5 +1437,173 @@
 
 
     </script>
+	<script type="text/javascript">        // ================= 秒杀切面：DOM渲染完成后异步查询秒杀状态，动态切换页面 =================
+	(function () {
+		var skuId = "[[${itemVo.info.skuId}]]";
+		var seckillTimer = null;
+		// 核心数据暂存：供后续秒杀下单提交使用
+		var seckillData = null;
 
+		function escapeHtml(str) {
+			if (str == null) { return ''; }
+			return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		}
+
+		function padZero(n) { return n < 10 ? '0' + n : '' + n; }
+
+		function splitLeft(left) {
+			if (left < 0) { left = 0; }
+			return {
+				h: Math.floor(left / 3600000),
+				m: Math.floor(left % 3600000 / 60000),
+				s: Math.floor(left % 60000 / 1000)
+			};
+		}
+
+		// 切换任何状态前先清理定时器，避免多定时器冲突
+		function clearSeckillTimer() {
+			if (seckillTimer) {
+				clearInterval(seckillTimer);
+				seckillTimer = null;
+			}
+		}
+
+		// 状态A：恢复常态（移除横幅/秒杀按钮，还原购物车按钮，去掉划线）
+		function restoreNormalState() {
+			clearSeckillTimer();
+			seckillData = null;
+			$('#seckillBanner').remove();
+			$('#seckillBtnWrap').remove();
+			$('.box-btns-two').show();
+			$('.box-summary .seckill-origin-price-off').removeClass('seckill-origin-price-off');
+		}
+
+		// 在价格区(.box-summary)上方插入秒杀横幅
+		function renderBanner(data, mode) {
+			$('#seckillBanner').remove();
+			var price = Number(data.seckillPrice);
+			var priceText = isNaN(price) ? '--' : price.toFixed(2);
+			var html;
+			if (mode === 'preview') {
+				html = '<div id="seckillBanner">' +
+						'<span class="seckill-tag">秒杀预告</span>' +
+						'<span class="seckill-price">秒杀价 ￥' + escapeHtml(priceText) + '</span>' +
+						'<span class="seckill-countdown">距开始 ' +
+						'<span class="seckill-h">00</span>:<span class="seckill-m">00</span>:<span class="seckill-s">00</span>' +
+						'</span></div>';
+			} else {
+				var origin = data.skuInfo ? data.skuInfo.price : null;
+				var originText = (origin != null && !isNaN(Number(origin))) ? Number(origin).toFixed(2) : '';
+				html = '<div id="seckillBanner">' +
+						'<span class="seckill-tag">秒杀进行中</span>' +
+						'<span class="seckill-price">￥' + escapeHtml(priceText) + '</span>' +
+						(originText ? '<span class="seckill-origin-price">￥' + escapeHtml(originText) + '</span>' : '') +
+						'<span class="seckill-countdown">距结束 ' +
+						'<span class="seckill-h">00</span>:<span class="seckill-m">00</span>:<span class="seckill-s">00</span>' +
+						'</span></div>';
+			}
+			$('.box-summary').before(html);
+		}
+
+		// 倒计时归零时执行onZero回调（自动重新请求接口切换状态）
+		function startCountdown(targetTime, onZero) {
+			clearSeckillTimer();
+			function update() {
+				var left = targetTime - Date.now();
+				var t = splitLeft(left);
+				$('#seckillBanner .seckill-h').text(padZero(t.h));
+				$('#seckillBanner .seckill-m').text(padZero(t.m));
+				$('#seckillBanner .seckill-s').text(padZero(t.s));
+				if (left <= 0) {
+					clearSeckillTimer();
+					onZero();
+				}
+			}
+			update();
+			seckillTimer = setInterval(update, 1000);
+		}
+
+		// 隐藏原“加入购物车”按钮，插入替换按钮
+		function replaceButtons(btnHtml) {
+			$('.box-btns-two').hide();
+			$('#seckillBtnWrap').remove();
+			$('.box-btns-two').after('<div class="box-btns-two" id="seckillBtnWrap"></div>');
+			$('#seckillBtnWrap').append(btnHtml);
+		}
+
+		// 状态B：秒杀预告期（有数据但randomCode为空）
+		function renderPreviewState(data) {
+			seckillData = null;
+			renderBanner(data, 'preview');
+			replaceButtons('<span id="seckillWaitBtn">秒杀即将开始</span>');
+			// 距开始倒计时，归零瞬间自动重新请求，无缝切换至状态C（或A）
+			startCountdown(data.startTime, function () {
+				requestSeckillInfo();
+			});
+		}
+
+		// 状态C：秒杀进行中（randomCode非空）
+		function renderSeckillState(data) {
+			// 核心数据暂存，供秒杀下单提交时使用
+			seckillData = {
+				randomCode: data.randomCode,
+				promotionSessionId: data.promotionSessionId,
+				seckillLimit: data.seckillLimit,
+				skuId: data.skuId,
+				seckillPrice: data.seckillPrice
+			};
+			renderBanner(data, 'ongoing');
+			// 价格区原价加划线样式
+			$('.box-summary ul li').eq(1).addClass('seckill-origin-price-off');
+			var $btn = $('<a href="javascript:void(0);" id="seckillBuyBtn">立即秒杀</a>');
+			$btn.on('click', function () {
+				var num = parseInt($('#skuNum').val()) || 1;
+				if (seckillData.seckillLimit && num > seckillData.seckillLimit) {
+					alert('该秒杀商品每人限购' + seckillData.seckillLimit + '件');
+					$('#skuNum').val(seckillData.seckillLimit);
+					return;
+				}
+				// TODO: 接入秒杀下单提交接口，seckillData 已暂存 randomCode/promotionSessionId/seckillLimit
+				console.log('提交秒杀下单', seckillData, '数量=' + num);
+				alert('秒杀下单接口对接中，敬请期待');
+			});
+			replaceButtons($btn);
+			// 距结束倒计时，归零后重新请求接口（后端返回null）自动回退状态A
+			startCountdown(data.endTime, function () {
+				requestSeckillInfo();
+			});
+		}
+
+		function requestSeckillInfo() {
+			$.ajax({
+				url: '/api/seckill/sku/seckill/' + skuId,
+				type: 'GET',
+				dataType: 'json',
+				success: function (res) {
+					if (res == null) {
+						// 状态A：普通商品/秒杀已结束，维持常态渲染
+						restoreNormalState();
+						return;
+					}
+					if (res.randomCode == null || res.randomCode === '') {
+						// 状态B：秒杀预告期
+						renderPreviewState(res);
+					} else {
+						// 状态C：秒杀进行中
+						renderSeckillState(res);
+					}
+				},
+				error: function (xhr, status, err) {
+					// 请求失败静默降级：保持状态A常态展示，不弹错误提示
+					console.warn('秒杀信息获取失败，保持常态展示:', status, err);
+					restoreNormalState();
+				}
+			});
+		}
+
+		$(function () {
+			requestSeckillInfo();
+		});
+	})();
+	</script>
 </html>
