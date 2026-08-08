@@ -47,7 +47,7 @@ public class SeckillScheduled {
     private static final long BUFFER_MILLIS = 3 * 24 * 60 * 60 * 1000L;
 
     @Async
-    @Scheduled(cron = "0 15 14 * * SAT")
+    @Scheduled(cron = "0 42 17 * * SAT")
     public void upload3Days(){
         RLock lock=redissonClient.getLock(SeckillRedisConstants.UPLOAD_LOCK);
         lock.lock(10, TimeUnit.SECONDS);
