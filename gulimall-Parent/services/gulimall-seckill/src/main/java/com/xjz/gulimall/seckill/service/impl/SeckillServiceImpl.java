@@ -1,10 +1,17 @@
 package com.xjz.gulimall.seckill.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.xjz.gulimall.seckill.constants.SeckillMqConstants;
 import com.xjz.gulimall.seckill.constants.SeckillRedisConstants;
 import com.xjz.gulimall.seckill.feign.ProductFeign;
+import com.xjz.gulimall.seckill.interceptor.LoginUserInterceptor;
 import com.xjz.gulimall.seckill.service.SeckillService;
 import com.xjz.gulimall.seckill.feign.CouponFeign;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RSemaphore;
+import org.redisson.api.RedissonClient;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
@@ -12,16 +19,20 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import to.Laste3DaysSessionTo;
+import to.SeckillOrderTo;
 import to.SeckillSkuRedisTo;
 import to.SkuInfoTo;
+import vo.MemberVo;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class SeckillServiceImpl implements SeckillService {
     @Autowired
     private CouponFeign couponFeign;
@@ -29,6 +40,10 @@ public class SeckillServiceImpl implements SeckillService {
     private StringRedisTemplate redisTemplate;
     @Autowired
     private ProductFeign productFeign;
+    @Autowired
+    private RedissonClient redissonClient;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Override
     public List<Laste3DaysSessionTo> query3DaysSession() {
@@ -123,5 +138,87 @@ public class SeckillServiceImpl implements SeckillService {
         }
         return null;
 
+    }
+
+    @Override
+    public String kill(String killId, String key, Integer num) {
+        //1、校验登录状态
+        MemberVo memberVo = LoginUserInterceptor.loginUser.get();
+        if(memberVo==null)
+        {
+            log.warn("用户未登录");
+            return null;
+        }
+        //2、校验时间
+        BoundHashOperations<String, String, String> hashOps = redisTemplate.boundHashOps(SeckillRedisConstants.SECKILL_SKUS);
+        String json = hashOps.get(killId);
+        if(StringUtils.hasText(json))
+        {
+            return null;
+        }
+        SeckillSkuRedisTo redisTo = JSON.parseObject(json, SeckillSkuRedisTo.class);
+        //获取场次时间
+        Long startTime = redisTo.getStartTime();
+        Long endTime = redisTo.getEndTime();
+        long now = System.currentTimeMillis();
+        if (now < startTime || now > endTime) {
+            log.warn("抢购失败，非活动时间段！now:{}, start:{}, end:{}", now, startTime, endTime);
+            return null;
+        }
+        //3、防刷随机码校验
+        String randomCode = redisTo.getRandomCode();
+        if(!key.equals(randomCode))
+        {
+            log.warn("抢购失败，防刷随机码不匹配！killId:{}", killId);
+            return null;
+        }
+        //4、购买数量校验
+        int limit = redisTo.getSeckillLimit().intValue();
+        if(num>limit)
+        {
+            log.warn("抢购失败，超出单人最大限购数量！num:{}, limit:{}", num, redisTo.getSeckillLimit());
+            return null;
+        }
+        //5、单人重复抢购校验
+        String userKey = "seckill:user:" + memberVo.getUserId() + "_" + killId;
+        // 占位有效时长 = 秒杀活动剩余时间 (活动结束自动释放，释放 Redis 内存)
+        long ttl = endTime - now;
+        Boolean setIfAbsent = redisTemplate.opsForValue().setIfAbsent(userKey, num.toString(), ttl, TimeUnit.MILLISECONDS);
+        if (Boolean.FALSE.equals(setIfAbsent)) {
+            // 如果 SETNX 失败，说明该用户已经抢购过该商品！
+            log.warn("抢购失败，用户 [id={}] 已经参与过该商品的秒杀！", memberVo.getUserId());
+            return null;
+        }
+        //6、RSemaphore 信号量扣减
+        RSemaphore semaphore = redissonClient.getSemaphore(SeckillRedisConstants.SKU_STOCK_SEMAPHORE + randomCode);
+        boolean acquire=false;
+        try {
+            acquire = semaphore.tryAcquire(num, 100, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            log.error("信号量扣减异常", e);
+            return null;
+        }
+
+        if (!acquire) {
+            log.warn("抢购失败，库存不足/信号量扣减失败！killId:{}", killId);
+            return null;
+        }
+        //此时用户已经抢购成功，组装消息对象，发往消息队列。
+        //1、生成全局唯一订单号
+        String orderSn = IdWorker.getTimeId();
+        //2、组装消息对象
+        SeckillOrderTo seckillOrderTo=new SeckillOrderTo();
+        seckillOrderTo.setOrderSn(orderSn);
+        seckillOrderTo.setNum(num);
+        seckillOrderTo.setMemberId(memberVo.getUserId());
+        seckillOrderTo.setSeckillPrice(redisTo.getSeckillPrice());
+        seckillOrderTo.setSkuId(redisTo.getSkuId());
+        seckillOrderTo.setPromotionSessionId(redisTo.getPromotionSessionId());
+        //3、发送消息至 RabbitMQ
+        rabbitTemplate.convertAndSend(SeckillMqConstants.SECKILL_EXCHANGE,SeckillMqConstants.SECKILL_ROUTING_KEY,seckillOrderTo);
+        log.info("恭喜！用户 [id={}] 秒杀成功！订单号:{}, 消息已投递至 RabbitMQ！", memberVo.getUserId(), orderSn);
+
+        // 4. 返回订单号，整个秒杀耗时约 10~20ms！
+        return orderSn;
     }
 }

@@ -7,6 +7,7 @@ import com.xjz.gulimall.order.vo.OrderConfirmVo;
 import com.xjz.gulimall.order.vo.OrderSubmitResVo;
 import com.xjz.gulimall.order.vo.PayAsyncVo;
 import com.xjz.gulimall.order.vo.PayVo;
+import to.SeckillOrderTo;
 import utils.PageUtils;
 import com.xjz.gulimall.order.entity.OrderEntity;
 
@@ -39,5 +40,6 @@ public interface OrderService extends IService<OrderEntity> {
     PageUtils queryPageWithItem(Map<String, Object> params);
 
     String handlePayResult(PayAsyncVo asyncVo) throws InterruptedException;
+    void createSeckillOrder(SeckillOrderTo seckillOrderTo);
 }
 

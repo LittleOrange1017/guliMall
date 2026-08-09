@@ -61,10 +61,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
-import to.OrderStockTo;
-import to.SkuStockLockedTo;
-import to.SkuStockTo;
-import to.SkuWeightTo;
+import to.*;
 import utils.PageUtils;
 import utils.Query;
 
@@ -629,6 +626,73 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         }
     }
 
+    @Override
+    public void createSeckillOrder(SeckillOrderTo seckillOrderTo) {
+        // 0. 幂等校验：按订单号查重，防止 MQ 重复消费导致重复建单
+        long count = this.count(new QueryWrapper<OrderEntity>().eq("order_sn", seckillOrderTo.getOrderSn()));
+        if (count > 0) {
+            log.warn("秒杀订单[{}]已存在，跳过重复建单", seckillOrderTo.getOrderSn());
+            return;
+        }
+        if (seckillOrderTo.getNum() == null || seckillOrderTo.getNum() <= 0) {
+            throw new RuntimeException("秒杀数量非法: " + seckillOrderTo.getNum());
+        }
+
+        // 1. 远程调用前置：落库前完成所有 RPC，避免在保存流程中途发起远程调用
+        SkuInfoTo skuInfo = productFeign.getFeignSkuInfo(seckillOrderTo.getSkuId());
+
+        // 2. 装配主订单
+        OrderEntity orderEntity = new OrderEntity();
+        orderEntity.setOrderSn(seckillOrderTo.getOrderSn());
+        orderEntity.setMemberId(seckillOrderTo.getMemberId());
+        orderEntity.setStatus(0);
+        orderEntity.setSourceType(0); // 标记秒杀来源
+        BigDecimal totalAmount = seckillOrderTo.getSeckillPrice().multiply(new BigDecimal(seckillOrderTo.getNum()));
+        orderEntity.setTotalAmount(totalAmount);
+        orderEntity.setFreightAmount(BigDecimal.valueOf(10L));
+        orderEntity.setPayAmount(totalAmount);
+        orderEntity.setPromotionAmount(BigDecimal.ZERO);
+        orderEntity.setCreateTime(new Date());
+
+        // 3. 装配订单项
+        OrderItemEntity orderItemEntity = new OrderItemEntity();
+        orderItemEntity.setOrderSn(seckillOrderTo.getOrderSn());
+        orderItemEntity.setRealAmount(totalAmount);
+        orderItemEntity.setSkuQuantity(seckillOrderTo.getNum());
+        orderItemEntity.setSkuPrice(seckillOrderTo.getSeckillPrice());
+        orderItemEntity.setSkuId(seckillOrderTo.getSkuId());
+        if (skuInfo != null) {
+            orderItemEntity.setSkuName(skuInfo.getSkuTitle());
+            orderItemEntity.setSkuPic(skuInfo.getSkuDefaultImg());
+            orderItemEntity.setSpuId(skuInfo.getSpuId());
+            orderItemEntity.setCategoryId(skuInfo.getCatalogId());
+        }
+
+        // 4. 小事务内批量落库，保证主单与明细的原子性
+        transactionTemplate.executeWithoutResult(status -> {
+            this.save(orderEntity);
+            orderItemEntity.setOrderId(orderEntity.getId());
+            orderItemService.save(orderItemEntity);
+
+            // 5. 事务提交后发送订单超时关闭延时消息（与普通下单保持一致）
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        rabbitTemplate.convertAndSend(OrderMqConstants.ORDER_EXCHANGE,
+                                OrderMqConstants.ORDER_CREATE_ROUTING_KEY, seckillOrderTo.getOrderSn());
+                    } catch (Exception e) {
+                        log.error("【重大异常】秒杀订单[{}]事务已提交但关单延时消息发送失败！",
+                                seckillOrderTo.getOrderSn(), e);
+                    }
+                }
+            });
+        });
+
+        log.info("秒杀订单后台创建成功！订单号: {}, 买家ID: {}, 实付金额: {}",
+                seckillOrderTo.getOrderSn(), seckillOrderTo.getMemberId(), totalAmount);
+    }
+
     private boolean refundAlipayTrade(String orderSn, String tradeNo, BigDecimal payAmountFromAlipay, String s) {
         try {
             AlipayConfig alipayConfig=new AlipayConfig();
@@ -668,4 +732,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
         queryWrapper.eq("order_sn",orderSn);
         return this.getOne(queryWrapper);
     }
+
+
+
+
+
 }

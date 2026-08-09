@@ -17,6 +17,9 @@ public class OrderMqConstants {
     public static final String STOCK_LOCK_ROUTING_KEY = "stock.locked.stock";
     public static final String STOCK_RELEASE_ROUTING_KEY = "stock.release.stock";
 
+    public static String SECKILL_ROUTING_KEY="order.seckill.order";
+    public static String SECKILL_ORDER_QUEUE="order.seckill.order.queue";
+
 
     /** TTL 配置（测试用，上线前改回 30*60*1000 / 31*60*1000） */
     public static final Integer ORDER_TTL = 30*60 * 1000;

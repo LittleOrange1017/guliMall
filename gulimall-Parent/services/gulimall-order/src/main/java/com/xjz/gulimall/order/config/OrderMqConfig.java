@@ -93,5 +93,21 @@ public class OrderMqConfig {
         return BindingBuilder.bind(stockReleaseQueue()).to(orderEventExchange())
                 .with(STOCK_RELEASE_ROUTING_KEY);
     }
+    /**
+     * 声明秒杀订单队列
+     */
+    @Bean
+    public Queue orderSeckillOrderQueue() {
+        // String name, boolean durable, boolean exclusive, boolean autoDelete
+        return new Queue(OrderMqConstants.SECKILL_ORDER_QUEUE, true, false, false);
+    }
+    /**
+     * 3. 将秒杀订单队列绑定到交换机
+     */
+    @Bean
+    public Binding seckillReleaseBinding() {
+        return BindingBuilder.bind(orderSeckillOrderQueue()).to(orderEventExchange())
+                .with(OrderMqConstants.SECKILL_ROUTING_KEY);
+    }
 }
 
