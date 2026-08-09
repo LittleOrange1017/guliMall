@@ -3,6 +3,7 @@ package com.xjz.gulimall.seckill.service;
 import to.Laste3DaysSessionTo;
 import to.SeckillSkuRedisTo;
 import to.SeckillSkuRelationTo;
+import utils.R;
 
 import java.util.List;
 
@@ -14,5 +15,5 @@ public interface SeckillService {
 
     SeckillSkuRedisTo getSkuSeckillInfo(Long skuId);
 
-    String kill(String killId, String key, Integer num);
+    R kill(String killId, String key, Integer num);
 }

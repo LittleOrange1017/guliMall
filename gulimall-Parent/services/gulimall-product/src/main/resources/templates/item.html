@@ -1563,9 +1563,48 @@
 					$('#skuNum').val(seckillData.seckillLimit);
 					return;
 				}
-				// TODO: 接入秒杀下单提交接口，seckillData 已暂存 randomCode/promotionSessionId/seckillLimit
-				console.log('提交秒杀下单', seckillData, '数量=' + num);
-				alert('秒杀下单接口对接中，敬请期待');
+				// 防止重复点击
+				var $this = $(this);
+				if ($this.hasClass('disabled')) { return; }
+				$this.addClass('disabled').text('秒杀提交中...');
+
+				$.ajax({
+					url: '/api/seckill/kill',
+					type: 'POST',
+					data: {
+						killId: seckillData.promotionSessionId + '_' + seckillData.skuId,
+						key: seckillData.randomCode,
+						num: num
+					},
+					dataType: 'json',
+					success: function (res) {
+						// 后端返回格式：{ code: 0, msg: "秒杀成功", orderSn: "xxx" }
+						if (res && res.code === 0) {
+							alert('🎉 秒杀成功！订单号：' + res.orderSn + '\n请前往订单中心完成支付');
+							// 如需跳转支付页：window.location.href = '/pay?orderSn=' + res.orderSn;
+						} else if (res && res.code === 401) {
+							// 未登录：跳转登录页，并携带回跳地址
+							alert('请先登录后再参与秒杀');
+							window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
+						} else {
+							// 其他业务错误（库存不足、限购、重复抢购等）
+							alert((res && res.msg) ? res.msg : '秒杀失败，请稍后重试');
+						}
+					},
+					error: function (xhr, status, err) {
+						// 网络异常 / 网关超时等
+						if (xhr.status === 401 || xhr.status === 302) {
+							alert('请先登录后再参与秒杀');
+							window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
+						} else {
+							console.error('秒杀请求失败:', status, err);
+							alert('网络异常，请稍后重试');
+						}
+					},
+					complete: function () {
+						$this.removeClass('disabled').text('立即秒杀');
+					}
+				});
 			});
 			replaceButtons($btn);
 			// 距结束倒计时，归零后重新请求接口（后端返回null）自动回退状态A

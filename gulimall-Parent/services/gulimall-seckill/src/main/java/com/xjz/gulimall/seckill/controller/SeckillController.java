@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import to.SeckillSkuRedisTo;
@@ -36,15 +37,13 @@ public class SeckillController {
     }
 
     /**
-     * 秒杀接口
+     * 秒杀下单接口
      */
-    @GetMapping("/kill")
-    public String kill(@RequestParam("killId") String killId,@RequestParam("key") String key,@RequestParam("num") Integer num)
-    {
-       String orderSn = seckillService.kill(killId,key,num);
-       return orderSn;
+    @PostMapping("/kill")
+    @ResponseBody
+    public R kill(@RequestParam("killId") String killId,
+                  @RequestParam("key") String key,
+                  @RequestParam("num") Integer num) {
+        return seckillService.kill(killId, key, num);
     }
-
-
-
 }
