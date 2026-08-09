@@ -667,7 +667,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             orderItemEntity.setSpuId(skuInfo.getSpuId());
             orderItemEntity.setCategoryId(skuInfo.getCatalogId());
         }
-
         // 4. 小事务内批量落库，保证主单与明细的原子性
         transactionTemplate.executeWithoutResult(status -> {
             this.save(orderEntity);
